@@ -774,3 +774,144 @@ Now, API Gateway will automatically validate the `Authorization` header token ag
     *   This new screen needs fields for the code (sent via email), the new password, and confirmation of the new password. It should call `authService.confirmPasswordReset()`.
 
 This is a significant update. Test each part carefully: registration flow (including confirmation), login flow, logout, password reset request, and confirm password reset. Then verify that authenticated API calls (like fetching ticks) work correctly once you protect API Gateway.
+
+Okay, great! You've successfully integrated the Amplify Auth foundation into your Flutter app. Now, let's connect the dots and make the authentication flow fully operational by handling the UI aspects and securing your backend API.
+
+Here are the next detailed steps:
+
+**Step 8: Protect API Gateway Endpoints**
+
+This is a *critical security step* performed in the **AWS Management Console**. Right now, your `ApiService` is sending the authentication token, but your API Gateway isn't configured to *validate* it.
+
+1.  **Navigate to API Gateway:** Log in to your AWS Console and go to the API Gateway service. Find the API that Amplify created for your backend (or the one you created manually if you didn't use `amplify add api`).
+2.  **Create a Cognito Authorizer:**
+    *   In your API's navigation pane, click on **Authorizers**.
+    *   Click **Create Authorizer**.
+    *   **Authorizer name:** Give it a descriptive name (e.g., `TickTrackerCognitoAuthorizer`).
+    *   **Type:** Select `Cognito`.
+    *   **Cognito User Pool:** Choose the User Pool created by Amplify in Step 4 (its name usually includes your project name and environment).
+    *   **Token Source:** Enter `Authorization`. This tells API Gateway to look for the token in the `Authorization` HTTP header (where your app sends `Bearer <token>`).
+    *   **Token Validation:** Leave empty (API Gateway handles validation against the pool).
+    *   Click **Create Authorizer**.
+3.  **Apply the Authorizer to Your Methods:**
+    *   In your API's navigation pane, click on **Resources**.
+    *   Navigate to each resource (path) that requires authentication (e.g., `/ticks`, `/users/me`, `/ticks/{tickId}/locate`).
+    *   For *each HTTP method* on that resource (e.g., GET, POST, PUT, DELETE under `/ticks`), click on the method name.
+    *   Click on **Method Request**.
+    *   Under **Settings**:
+        *   Click the pencil icon next to **Authorization**.
+        *   Select the Cognito Authorizer you just created (e.g., `TickTrackerCognitoAuthorizer`).
+        *   Click the checkmark icon to save.
+    *   Repeat this for *all methods* on *all resources* that should be protected. Authentication endpoints like `/auth/login` or `/auth/register` should *not* have an authorizer applied.
+4.  **Deploy Your API:** After applying the authorizer to all necessary methods, you **must deploy your API** for the changes to take effect.
+    *   Click on **Actions** (usually near the top).
+    *   Select **Deploy API**.
+    *   Choose a **Deployment stage** (e.g., `dev`, `prod` - the one Amplify uses or one you created).
+    *   Click **Deploy**.
+
+**Result:** Now, API Gateway will automatically check for a valid Cognito ID token in the `Authorization` header for the protected routes. If the token is missing, invalid, or expired, API Gateway will reject the request with a `401 Unauthorized` or `403 Forbidden` error *before* it even reaches your Lambda function. Your Lambda functions can now trust that if a request arrives, it came from an authenticated user.
+
+---
+
+**Step 9: Implement UI for Confirmation & Password Reset**
+
+Your `AuthService` now handles the *logic* for confirming sign-up and resetting passwords using Amplify, but your UI needs screens/dialogs for the user interaction.
+
+1.  **Sign-Up Confirmation Screen:**
+    *   **Create a new screen:** `lib/screens/auth/confirm_signup_page.dart`.
+    *   **Navigation:** Modify `RegisterPage`'s `_submitRegistration` function. If `authService.register()` returns `true` AND `authService.needsConfirmation` is `true`, navigate to `ConfirmSignUpPage` instead of `TickListPage`. Pass the `email` (which is `_confirmationUsername` in `AuthService`) as an argument to this new page.
+    *   **UI Elements:**
+        *   Display a message explaining that a code was sent to the user's email.
+        *   A `TextFormField` for the user to enter the confirmation code.
+        *   A "Confirm" button.
+        *   A "Resend Code" button/link.
+    *   **Logic:**
+        *   The "Confirm" button calls `authService.confirmSignUp(code)`. On success, navigate to the `LoginPage` (or maybe `TickListPage` if you want to auto-login, though explicit login is often clearer). On failure, display the error from `authService.error`.
+        *   The "Resend Code" button calls `authService.resendConfirmationCode()`. Show a success/error message using `CustomSnackBar`.
+
+2.  **Password Reset Confirmation Screen:**
+    *   **Create a new screen:** `lib/screens/auth/confirm_reset_password_page.dart`.
+    *   **Navigation:** Modify `LoginPage`'s `_handleForgotPassword` (or the dialog it shows). If `authService.requestPasswordReset()` returns `true`, navigate to `ConfirmResetPasswordPage`. Pass the `email` as an argument.
+    *   **UI Elements:**
+        *   Display the email address for clarity.
+        *   A `TextFormField` for the confirmation code (sent via email).
+        *   A `TextFormField` for the new password (use `Validators.validatePassword`).
+        *   A `TextFormField` to confirm the new password (use `Validators.validateConfirmPassword`).
+        *   A "Set New Password" button.
+    *   **Logic:**
+        *   The button calls `authService.confirmPasswordReset(email, newPassword, code)`. On success, navigate to the `LoginPage` with a success message. On failure, display the error from `authService.error`.
+
+---
+
+**Step 10: Implement Backend APIs (Lambda & API Gateway)**
+
+This is where you replace the `#TODO`s for actual API logic in `ApiService` by building the corresponding backend. This involves creating Lambda functions and connecting them to API Gateway endpoints (which you just protected in Step 8).
+
+**General Workflow for Each Protected Endpoint (e.g., `GET /ticks`):**
+
+1.  **Create Lambda Function (AWS Console or Amplify CLI):**
+    *   Go to the Lambda service in the AWS Console.
+    *   Click "Create function".
+    *   Choose "Author from scratch".
+    *   **Function name:** e.g., `tickTrackerGetTicksFunction`.
+    *   **Runtime:** Choose Node.js or Python (popular choices).
+    *   **Permissions:** Create or use an execution role that has permissions to access **DynamoDB** (read permissions for this specific function, like `dynamodb:Query`) and potentially **CloudWatch Logs** for logging.
+2.  **Write Lambda Code:**
+    *   Use the AWS SDK for your chosen runtime (e.g., `@aws-sdk/client-dynamodb` for Node.js, `boto3` for Python).
+    *   **Get User ID:** When API Gateway invokes the Lambda via the Cognito Authorizer, the user's information (including the `sub` - unique user ID) is available in the `event.requestContext.authorizer.claims` object. Extract the `sub`.
+    *   **Interact with DynamoDB:**
+        *   For `GET /ticks`: Perform a DynamoDB `Query` operation on your table using the `USER#{userId}` as the Partition Key (PK) and a condition where the Sort Key (SK) `begins_with('TICK#')`.
+        *   For `POST /ticks` (Associate): Get `userId` from claims, `tickName` & `macAddress` from `event.body`. Check if `TICK#{macAddress}` PK exists. If not, create the `USER#{userId}/TICK#{tickId}` and `TICK#{tickId}/METADATA` items using `PutItem`. **Crucially:** Generate a unique `tickId` within the Lambda (e.g., using `uuid`). After successful DynamoDB write, use the AWS IoT SDK (`@aws-sdk/client-iot-data-plane` or `boto3.client('iot-data')`) to publish the `link_device` MQTT message to the specific Tick via AWS IoT Core.
+        *   For `PUT /users/me`: Get `userId` from claims, `name` from `event.body`. Update the corresponding user item in DynamoDB. (Updating Cognito attributes directly from Lambda requires Admin SDK calls and more complex permissions).
+        *   For `DELETE /ticks/{tickId}`: Get `userId` from claims, `tickId` from `event.pathParameters`. Delete the `USER#{userId}/TICK#{tickId}` item. *Also* delete the `TICK#{tickId}/METADATA` item and potentially the history items `USER#{userId}/HISTORY#...` associated with that tick. Send the `unlink_device` MQTT command via IoT Core.
+    *   **Return Response:** Format the response according to API Gateway Lambda proxy integration requirements (statusCode, headers, body as a JSON string).
+3.  **Connect API Gateway Method to Lambda:**
+    *   Go back to API Gateway -> Resources.
+    *   Select the method (e.g., `GET` under `/ticks`).
+    *   Click **Integration Request**.
+    *   **Integration type:** `Lambda Function`.
+    *   **Lambda Region:** Your AWS region.
+    *   **Lambda Function:** Select the function you created (e.g., `tickTrackerGetTicksFunction`).
+    *   Save. API Gateway might ask for permission to invoke your Lambda function – grant it.
+4.  **Deploy API Gateway:** Remember to deploy the API again after linking the Lambda function.
+
+**Replace `#TODO`s in `ApiService`:**
+
+*   Now that the backend endpoints exist, go back to `lib\services\api_service.dart`.
+*   Replace the simulation logic within the `get`, `post`, `put`, `delete` methods with actual calls using the `http` package, pointing to your deployed API Gateway endpoints. Make sure you are using the correct HTTP method and sending the body/parameters as expected by your Lambda functions.
+*   Use the real response handling in `_handleResponse`.
+
+---
+
+**Step 11: Implement Real-time Updates (Optional but Recommended)**
+
+Polling the API repeatedly for Tick updates isn't efficient. Use Push Notifications.
+
+1.  **Backend Setup (SNS + Push Services):**
+    *   **IoT Rule:** Create a rule in AWS IoT Core that triggers when a Tick sends specific MQTT messages (e.g., `periodic_update`, `movement_alert`, `low_battery`).
+    *   **Lambda Target:** Configure the IoT Rule to send the MQTT message payload to a new Lambda function (e.g., `tickTrackerNotificationHandler`).
+    *   **Notification Lambda:** This Lambda function:
+        *   Receives the Tick data (ID, lat, lng, bat, eventType).
+        *   Looks up the owner (`userId`) associated with the `tickId` (query DynamoDB `TICK#{tickId}/METADATA`).
+        *   Finds the Push Notification token(s) (e.g., FCM token for Android, APNs token for iOS) registered for that `userId` (you'll need to store these tokens, perhaps in another DynamoDB table: `USER#{userId}/NOTIFICATION_TOKENS`).
+        *   Uses **AWS SNS (Simple Notification Service)** to send a push notification payload specifically formatted for FCM (Android) and/or APNs (iOS) to the user's registered device(s). The payload should contain the updated Tick data or at least the `tickId` and `eventType` so the app knows what happened.
+2.  **Flutter Setup (Receive Push Notifications):**
+    *   **Add Packages:** `firebase_core`, `firebase_messaging` (for Android/iOS via FCM). You'll need to set up a Firebase project and configure your Flutter app for FCM. For direct APNs on iOS, the setup is different.
+    *   **Initialization:** Initialize Firebase in `main.dart`.
+    *   **Request Permissions:** Request notification permissions from the user.
+    *   **Get Token:** Get the FCM device token using `FirebaseMessaging.instance.getToken()`.
+    *   **Register Token:** Send this token to your backend (e.g., via a `POST /users/me/register-token` API endpoint) so the Notification Lambda can find it later. Store it associated with the `userId`.
+    *   **Handle Messages:** Set up listeners using `FirebaseMessaging.onMessage.listen` (foreground), `FirebaseMessaging.onMessageOpenedApp.listen` (background tap), and `FirebaseMessaging.instance.getInitialMessage()` (terminated tap) to receive notifications.
+    *   **Update UI:** When a notification related to a Tick update is received, parse the payload, get the updated `Tick` data, and call `Provider.of<TickService>(context, listen: false).updateTickDataLocally(updatedTick)` to refresh the UI without needing a full API poll.
+
+---
+
+**Step 12: Refinement and Testing**
+
+*   **Thorough Testing:** Test every authentication flow (sign-up, confirm, sign-in, forgot password, confirm reset, sign-out). Test API calls with and without valid tokens. Test Tick association and commands.
+*   **Loading Indicators:** Make loading indicators more granular where appropriate (e.g., indicating *which* specific action is loading).
+*   **Error Messages:** Provide user-friendly error messages based on the specific exceptions caught (from Amplify or your API).
+*   **User Feedback:** Add success messages (e.g., using `CustomSnackBar`) for actions like password reset confirmation, profile updates, etc.
+*   **Edge Cases:** Consider what happens if the network connection is lost during multi-step processes.
+
+This is a comprehensive roadmap. Tackle it step-by-step, starting with API protection and the UI for the remaining auth flows. Good luck!

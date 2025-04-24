@@ -11,7 +11,7 @@
 | **3** | Gestion de projet | Dictateur | - 1 page avec diagramme de Gantt actualisé <br>- Répartition initiale vs réelle des tâches <br>- Retour sur la méthodologie utilisée |
 | **4** | Retour formation "Machine Virtuelle" | TOUS | - 5 paragraphes distincts (1 par membre) <br>- Critique constructive de max. 10 lignes chacun |
 
-# PowerPoint PC3
+# PowerPoint PC3 (Assigné : Marmoush)
 
 | N° Slide | Section PowerPoint | Contenu demandé | Visuels requis |
 | :-- | :-- | :-- | :-- |

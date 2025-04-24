@@ -22,9 +22,7 @@
 | **5** | Flutter (2.3) | - Démo vidéo app (30s)<br>- Architecture modulaire<br>- UX avantages/limites | 3 captures écran annotées + mockup |
 | **6** | AWS (2.4) | - Dashboard personnalisé<br>- Diagramme architecture dynamique<br>- Coûts mensuels estimés | Capture CloudWatch + schéma MermaidJS |
 | **7** | Intégration (2.5) | - Comparatif boîtier v1/v2<br>- Diagramme d'assemblage<br>- Test d'étanchéité | 2 photos techniques + vidéo 20s (montage) |
-| **8** | Formation VM | - Radar chart compétences<br>- Témoignages audio extraits<br>- Cas d'usage projets futurs | Avatar membre + icônes thématiques |
-| **9** | Gestion projet | - Diagramme Gantt animé<br>- Burndown chart sprint final<br>- Lessons learned | Capture Trello/Miro + photo équipe |
-| **10** | Conclusion | - Roadmap finale<br>- Budget réel vs prévu<br>- Perspectives commerciales |
+| **8** | Conclusion | - Roadmap finale<br>- Budget réel vs prévu<br>- Perspectives commerciales |
 
 # Rapport final
 

@@ -1,57 +1,4 @@
-**(Max)**
-
-*   **Slide 11 : Tâche 4 - Application Vidéo en Temps Réel**
-    *   Titre : En Action : Traitement Vidéo
-    *   Objectif : Appliquer les modèles sur une séquence vidéo.
-    *   Méthode : Capture frame par frame, inférence, annotation.
-    *   **Démonstration (très courts clips ou GIFs) :**
-        *   Extrait 1 : Classification en temps réel (texte de la classe sur la vidéo).
-        *   Extrait 2 : Détection en temps réel (BBoxes sur la vidéo).
-        *   Extrait 3 : Segmentation en temps réel (Masques sur la vidéo).
-    *   Commentaire : "Les modèles montrent leur capacité à généraliser sur des séquences animées."
-
-*   **Slide 12 : Tâche 5 - Analyse des Performances (PyTorch bench)**
-    *   Titre : Sous le Capot : Benchmarking des Modèles
-    *   Objectif : Évaluer la consommation de ressources (calcul, mémoire, énergie).
-    *   Outil : `pytorch-bench`.
-    *   Visuel : **Le tableau récapitulatif généré par votre script.**
-        *   Mettre en évidence (ex: avec des flèches ou en gras) une ou deux lignes/colonnes intéressantes.
-        *   Exemple de commentaire : "On observe que [Modèle X] est le plus rapide en FPS, tandis que [Modèle Y] est plus léger en taille."
-
-*   **Slide 13 : Conclusion & Perspectives**
-    *   Titre : Bilan et Prochaines Étapes
-    *   **Réalisations :**
-        *   Succès dans les 5 tâches assignées.
-        *   Développement d'un pipeline complet (données -> entraînement -> évaluation -> application).
-        *   Utilisation efficace de W&B pour le suivi.
-    *   **(Optionnel) Défis :** Brièvement, si un défi notable a été surmonté (ex: gestion des données, temps de calcul).
-    *   **Perspectives :**
-        *   Optimisation des hyperparamètres (Optuna).
-        *   Participation à la compétition Kaggle.
-        *   Test d'architectures plus larges ou plus récentes.
-        *   Déploiement sur un système embarqué (si pertinent).
-
-*   **Slide 14 : Questions & Remerciements**
-    *   Titre : Merci de votre attention !
-    *   "Des questions ?"
-    *   Peut-être le lien vers votre repo GitHub/WanDB si vous voulez le partager.
-
----
-
-**Conseils Généraux pour la Présentation :**
-
-1.  **Répétez ensemble !** Surtout les transitions entre les orateurs.
-2.  **Soyez dynamiques :** Variez le ton, regardez l'audience.
-3.  **Maîtrisez votre temps :** 10-15 minutes, c'est court. Chaque slide doit être pertinente. Ne lisez pas vos slides.
-4.  **Visuels > Texte :** Privilégiez les graphiques, images, démos. Les slides doivent supporter votre discours, pas le remplacer.
-5.  **Simplicité :** N'entrez pas dans des détails trop techniques sauf si on vous le demande. L'idée est de montrer que vous avez fait le travail et obtenu des résultats.
-6.  **Anticipez les questions :** Qui répond à quoi ? Préparez-vous sur les choix de modèles, les hyperparamètres, les difficultés.
-7.  **WandB :** N'hésitez pas à mentionner que vous avez utilisé WandB pour logger vos expériences, c'est un bon point. Vous pouvez même avoir un onglet de navigateur ouvert sur un dashboard WandB pertinent en backup si une question pointue arrive.
-
-
----
-
-Commençons par la **Tâche 4 : Application Vidéo en Temps Réel** (ta Slide 11).
+## Commençons par la **Tâche 4 : Application Vidéo en Temps Réel** (ta Slide 11).
 
 ---
 
@@ -150,11 +97,9 @@ Tu as trois blocs principaux de code pour générer les vidéos. Voici les point
 
 ---
 
-Prépare-toi à ce que le prof puisse te demander pourquoi tu as choisi un modèle spécifique pour la vidéo de classification si plusieurs ont été entraînés, ou des questions sur le compromis vitesse/précision du traitement vidéo.
+## 2. Ton Speech pour la Slide 12
 
 ---
-
-### 2. Ton Speech pour la Slide 12
 
 **(Transition depuis ta slide précédente - Traitement Vidéo)**
 
@@ -231,3 +176,71 @@ Voici les parties importantes de ton code de benchmarking que le prof pourrait q
 Cette approche te permet de présenter le travail de manière honnête tout en montrant que tu as compris la tâche.
 
 Vérifie bien les chiffres du tableau que tu vas présenter et adapte ton speech en conséquence. Prêt pour la conclusion ou une autre partie ?
+
+
+Absolument ! Préparons-nous aux questions potentielles du professeur sur tes deux slides (Tâche 4 : Vidéo et Tâche 5 : Benchmarking) et la conclusion.
+
+---
+
+## Questions Potentielles pour la Slide 11 (Tâche 4 : Application Vidéo)
+
+**Concernant le Choix des Modèles pour la Vidéo :**
+1.  **Q :** "Pour la vidéo de classification, vous avez dit utiliser votre 'meilleur modèle'. Sur quel critère exact avez-vous basé ce choix ? Uniquement l'accuracy de validation ?"
+    *   **Ta Réponse Idéale :** "Principalement sur l'accuracy de validation obtenue lors de nos entraînements et trackée via Weights & Biases. Nous avons implémenté une logique dans le code qui sélectionne automatiquement le modèle de classification (parmi CNN, ViT, ConvNeXt) ayant atteint la meilleure accuracy sur le set de validation. Nous avons considéré que c'était le critère le plus pertinent pour une tâche de classification pure sur chaque frame."
+    *   **Pour aller plus loin (si tu veux montrer que tu as réfléchi) :** "Idéalement, pour une application vidéo, on pourrait aussi considérer la vitesse d'inférence (FPS) du modèle comme critère secondaire si la fluidité est critique, mais pour cette démonstration, la précision primait."
+
+2.  **Q :** "Avez-vous fine-tuné spécifiquement vos modèles YOLO pour cette vidéo ou utilisé les modèles entraînés sur le dataset MOCS_Small/MOCS_Small_Seg ?"
+    *   **Ta Réponse Idéale :** "Nous avons utilisé les modèles YOLOv11 (détection) et YOLOv11-seg (segmentation) qui ont été fine-tunés sur les datasets MOCS_Small et MOCS_Small_Seg respectivement. La vidéo `unity_video.mp4` sert ici de test de généralisation pour voir comment ces modèles se comportent sur des données un peu différentes de celles d'entraînement, ce qui est un scénario réaliste pour une application de surveillance."
+
+**Concernant la Performance et la Faisabilité "Temps Réel" :**
+3.  **Q :** "Vous parlez de 'temps réel simulé'. Quelle était approximativement la vitesse de traitement de vos vidéos ? Était-ce vraiment temps réel (ex: 25-30 FPS) ?"
+    *   **Ta Réponse Idéale (sois honnête) :** "La vitesse de traitement pour la génération des vidéos dépendait du modèle. Pour la classification, c'était [plus rapide/relativement rapide]. Pour la détection et surtout la segmentation avec YOLO, le traitement frame par frame sur Colab [était plus lent que du temps réel / atteignait X FPS approximativement]. L'objectif ici était de démontrer la fonctionnalité. Pour un déploiement véritablement temps réel, des optimisations seraient nécessaires, comme le traitement d'une frame sur N, l'utilisation de modèles encore plus légers, ou le déploiement sur un hardware plus puissant avec des accélérateurs spécifiques."
+    *   **Si tu as les infos du benchmark (FPS) :** "D'après notre benchmarking, le modèle de classification [Nom] tournait à X FPS, YOLOv11 détection à Y FPS et YOLOv11-seg à Z FPS. La génération vidéo ajoute un overhead pour la lecture/écriture des frames, donc la vitesse effective était probablement un peu inférieure, surtout si les trois inférences étaient faites séquentiellement sur chaque frame pour une vidéo 'tout-en-un' (ce que vous n'avez pas fait pour les 3 vidéos séparées, mais c'est bon à savoir)."
+
+4.  **Q :** "Avez-vous envisagé des techniques pour accélérer le traitement vidéo, comme ne traiter qu'une image sur N, ou utiliser un tracking d'objets entre les inférences complètes ?"
+    *   **Ta Réponse Idéale :** "Oui, ce sont d'excellentes pistes pour l'optimisation. Pour ce mini-projet, nous nous sommes concentrés sur l'application directe des modèles sur chaque frame (ou presque, pour la démo) pour bien visualiser leur sortie. Mais en production, sauter des frames et appliquer l'inférence complète moins fréquemment, couplé à des algorithmes de tracking plus légers (comme KCF, MOSSE, ou ceux intégrés dans des librairies comme OpenCV ou DeepSORT avec YOLO) entre ces inférences, serait une stratégie clé pour atteindre un meilleur compromis fluidité/précision."
+
+**Concernant la Qualité des Prédictions Vidéo :**
+5.  **Q :** "Avez-vous observé des instabilités dans les prédictions d'une frame à l'autre (flickering des classes, des bounding boxes, ou des masques) ? Si oui, comment pourrait-on y remédier ?"
+    *   **Ta Réponse Idéale :** "Oui, il peut y avoir une certaine instabilité, surtout si les objets sont partiellement occultés ou si l'éclairage change. Pour la classification, la prédiction peut varier si la composition de la scène change légèrement. Pour la détection/segmentation, les boîtes ou masques peuvent légèrement 'sauter'. Pour y remédier, on pourrait appliquer un lissage temporel sur les prédictions (par exemple, une moyenne mobile des probabilités de classe sur quelques frames, ou un lissage des coordonnées des boîtes). L'utilisation d'algorithmes de tracking, comme mentionné précédemment, aide aussi à maintenir la cohérence des identifiants d'objets et de leurs positions."
+
+**Concernant le Code Vidéo :**
+6.  **Q :** "Pourquoi avez-vous utilisé `cv2.VideoWriter_fourcc(*'mp4v')` ? Y a-t-il d'autres codecs possibles ?"
+    *   **Ta Réponse Idéale :** "Nous avons utilisé `'mp4v'` car c'est un codec courant pour le format MPEG-4, largement compatible et qui produit des fichiers `.mp4`. OpenCV supporte d'autres codecs FourCC, comme `'XVID'` pour les fichiers .avi, ou `'MJPG'` pour des Motion JPEGs. Le choix dépend souvent de la compatibilité souhaitée et de la plateforme."
+
+7.  **Q :** "Dans votre boucle de traitement vidéo, vous rechargez le modèle de classification à chaque frame ou une seule fois ?" (Vérifie ton code, mais normalement c'est une seule fois avant la boucle).
+    *   **Ta Réponse Idéale (si c'est le cas) :** "Non, le modèle de classification (ainsi que les modèles YOLO) est chargé une seule fois avant d'entrer dans la boucle de traitement des frames. Le recharger à chaque frame serait extrêmement inefficace."
+
+---
+
+## Questions Potentielles pour la Slide 12 (Tâche 5 : Benchmarking)
+
+**Concernant la Méthodologie du Benchmarking :**
+1.  **Q :** "Pourquoi utiliser des 'dummy inputs' (données aléatoires) pour le benchmarking et non de vraies images du dataset de test ?"
+    *   **Ta Réponse Idéale :** "Pour le benchmarking de la performance pure d'inférence (vitesse, mémoire), l'utilisation de dummy inputs est une pratique standard. Elle permet de s'isoler des variations dues au contenu spécifique des images et du temps de chargement/prétraitement des données réelles. L'objectif est de mesurer la capacité brute du modèle à traiter des tenseurs de la bonne dimension. Le prétraitement des images réelles pourrait ajouter un overhead variable qui masquerait la performance pure du modèle."
+
+2.  **Q :** "Vous mentionnez `n_warmup=5` et `n_loops=20`. Comment avez-vous choisi ces valeurs ? Sont-elles suffisantes ?"
+    *   **Ta Réponse Idéale :** "Ces valeurs sont souvent des valeurs par défaut raisonnables pour `pytorch-bench` et d'autres outils de benchmarking. Cinq itérations de warmup permettent généralement au GPU de stabiliser sa performance (ex: monter en fréquence, charger les kernels CUDA). Vingt boucles de mesure offrent une moyenne assez stable du temps d'inférence. Pour une analyse plus poussée, on pourrait augmenter `n_loops` pour réduire la variance des mesures, mais pour les besoins de ce projet, cela nous a semblé un bon compromis entre temps de benchmarking et fiabilité des estimations."
+
+3.  **Q :** "Le tableau montre des 'N/A' pour Test_accuracy et Test_loss pour YOLO. Pourquoi ? Et comment évalue-t-on alors leur 'précision' ?"
+    *   **Ta Réponse Idéale :** "C'est exact. Les métriques 'Test accuracy' et 'Test loss' telles que définies pour les modèles de classification (où chaque image a une seule classe vraie) ne s'appliquent pas directement aux tâches de détection et de segmentation. Pour ces tâches, la précision est évaluée avec des métriques comme le mAP (mean Average Precision) pour différentes seuils d'IoU (Intersection over Union), que YOLO calcule lors de sa phase `model.val()`. Ces résultats mAP sont loggés par YOLO et disponibles dans les rapports de Weights & Biases ou les sorties de la console. Nous avons mis 'N/A' pour indiquer que la métrique *telle que nommée* n'est pas pertinente, mais les modèles ont bien été évalués sur leur précision via le mAP."
+
+**Concernant l'Interprétation des Résultats du Tableau :**
+4.  **Q :** "Votre modèle ViT a la meilleure accuracy mais est aussi le plus lourd et a beaucoup de paramètres. Dans quel scénario concret choisiriez-vous quand même ViT malgré ces inconvénients ?"
+    *   **Ta Réponse Idéale :** "On choisirait ViT dans un scénario où la précision de classification est absolument critique et où les contraintes de mémoire, de taille de modèle sur disque, ou de vitesse d'inférence sont moins strictes. Par exemple, pour une analyse offline d'images où le temps de traitement n'est pas un goulot d'étranglement, ou si les ressources matérielles (GPU puissant avec beaucoup de VRAM) sont disponibles. Si une erreur de classification a des conséquences graves, le surcoût en ressources peut être justifié."
+
+5.  **Q :** "Le modèle de segmentation YOLOv11-seg consomme presque le double de mémoire que le modèle de détection YOLOv11. Pouvez-vous expliquer pourquoi ?"
+    *   **Ta Réponse Idéale :** "La tâche de segmentation est intrinsèquement plus complexe que la détection. La détection prédit des boîtes englobantes (4 coordonnées + classe). La segmentation, elle, doit prédire un masque pour chaque objet, c'est-à-dire une classification pixel par pixel à l'intérieur de la région de l'objet. Cela implique souvent des têtes de modèle plus complexes (pour générer les masques) et la manipulation de tenseurs de plus grande dimension représentant ces masques, ce qui mène naturellement à une consommation mémoire plus élevée pendant l'inférence."
+
+6.  **Q :** "Les émissions de CO2 et la consommation d'énergie sont très faibles dans votre tableau. Est-ce que cela signifie que l'impact environnemental de ces modèles est négligeable ?"
+    *   **Ta Réponse Idéale :** "Les chiffres présentés ici correspondent à l'impact d'un nombre limité d'inférences (celles du benchmark, donc `n_warmup + n_loops`). L'impact d'une seule inférence est effectivement très faible. Cependant, l'impact environnemental du deep learning devient significatif lorsqu'on considère l'ensemble du cycle de vie :
+        *   **L'entraînement** de ces modèles, surtout les plus gros comme ViT, qui peut durer des heures voire des jours sur des GPUs gourmands en énergie.
+        *   Le **déploiement à grande échelle**, où des millions ou milliards d'inférences sont effectuées.
+    Donc, bien que faible pour une exécution ponctuelle, il est crucial de continuer à optimiser l'efficacité énergétique des modèles et des infrastructures, surtout pour les modèles entraînés et déployés massivement."
+
+7.  **Q :** "Vous avez eu des erreurs pour générer ce tableau dans le notebook final, mais vous présentez celui-ci. Comment pouvons-nous être sûrs de la validité de ces chiffres pour les modèles que vous avez effectivement soumis ?"
+    *   **Ta Réponse Idéale (honnête et confiant) :** "C'est une excellente question. Le tableau présenté est issu d'une exécution où `pytorch-bench` fonctionnait correctement avec les mêmes types de modèles (ResNet18, ViT, ConvNeXt, YOLOv11-n, YOLOv11n-seg) et des configurations d'entraînement similaires à celles du projet final. Bien qu'il puisse y avoir de légères variations dues à des versions de librairies ou des optimisations spécifiques dans le code final, les ordres de grandeur et les tendances comparatives (par exemple, ViT étant plus lourd que ResNet18) restent valides et représentatifs. Le code pour effectuer ce benchmarking est présent dans le notebook soumis, et l'objectif ici est de démontrer notre compréhension de la démarche et notre capacité à interpréter ce type de résultats."
+
+**Concernant la Librairie `pytorch-bench` :**
+8.  **Q :** "Outre les FPS et la mémoire, `pytorch-bench` fournit-il d'autres métriques utiles que vous n'avez pas incluses ?"
+    *   **Ta Réponse Idéale :** "`pytorch-bench` peut aussi fournir des informations plus détaillées sur les temps d'inférence, comme la latence moyenne, médiane, le 90ème percentile, etc. Il peut également, si configuré, profiler l'utilisation du CPU. Pour ce tableau, nous nous sommes concentrés sur les métriques demandées et les plus synthétiques, mais une analyse plus fine est possible avec l'outil."

@@ -4,10 +4,7 @@
 
 ## **(0:30) Introduction générale - Mohammed**
 
-**Mohammed :** "Bonjour à tous, Monsieur Benjelloun, Monsieur Najem. Nous sommes ravis de vous présenter aujourd'hui l'aboutissement de notre projet d'ingénierie informatique : "Tick", un système connecté de surveillance et de suivi pour véhicules personnels.
-
-*(Transition rapide)*
-Face à l'augmentation constante des vols, notamment de deux-roues comme les scooters, motos, ou trottinettes, la tranquillité d'esprit des propriétaires est mise à rude épreuve."
+**Mohammed :** "Bonjour à tous. Nous sommes ravis de vous présenter aujourd'hui l'aboutissement de notre projet d'informatique : "Tick", un module intelligent d’alerte et de localisation pour véhicules.
 
 ---
 
@@ -15,12 +12,12 @@ Face à l'augmentation constante des vols, notamment de deux-roues comme les sco
 
 **Mohammed :** "Le problème est concret : en Belgique, rien qu'en 2023, la Police Fédérale a enregistré plus de 3600 vols de deux-roues motorisés. Pour les motos, qui représentent un investissement financier conséquent, souvent au-delà de 10 000 euros, la perte est d'autant plus douloureuse.
 
-Les solutions de sécurité traditionnelles, comme les cadenas ou les bloque-disques, sont un premier rempart indispensable. Cependant, elles présentent des limites claires :
-1.  Elles peuvent être neutralisées, parfois rapidement.
-2.  Surtout, elles n'offrent **aucune alerte en temps réel** au propriétaire lors d'une tentative de vol. Vous découvrez le vol bien trop tard.
+Face à ce risque, quelles sont les solutions existantes ? Les dispositifs de sécurité traditionnels, comme les robustes cadenas en U, les bloque-disques, ou les chaînes, sont bien entendu indispensables. Ils constituent le premier rempart physique contre le vol. Cependant, malgré leur utilité, ils présentent des limites intrinsèques importantes :
+1.  Tout d'abord, aussi solides soient-ils, ils peuvent être neutralisés par des voleurs déterminés et équipés. Cela peut être une question de temps, mais ils ne sont pas infaillibles.
+2.  Surtout, elles n'offrent **aucune alerte en temps réel** au propriétaire lors d'une tentative de vol. Lors d'une tentative de vol, ces dispositifs ne vous préviennent pas. Le propriétaire ne découvre le méfait que bien plus tard, souvent le lendemain matin, lorsqu'il est déjà trop tard pour réagir rapidement. L'effet de surprise est total pour le voleur.
 3.  Et une fois le vol commis, ces dispositifs ne fournissent **aucune aide active** pour localiser ou récupérer le véhicule.
 
-C'est important de le souligner, et c'est une remarque que vous nous aviez faite au PC3 et qui nous a beaucoup aidés à mieux positionner notre projet : **Tick n'est pas un antivol au sens strict**. Il ne va pas physiquement empêcher le vol comme le ferait un cadenas. Notre objectif n'est pas de remplacer ces dispositifs, mais de les **compléter** en apportant une couche de sécurité active et informative."
+Néanmoins, c'est important de le souligner : **Tick n'est pas un antivol au sens strict**. Il ne va pas physiquement empêcher le vol comme le ferait un cadenas. Notre objectif n'est pas de remplacer ces dispositifs, mais de les **compléter** en apportant une couche de sécurité active et informative."
 
 ---
 
@@ -29,10 +26,10 @@ C'est important de le souligner, et c'est une remarque que vous nous aviez faite
 **Mohammed :** "C'est pour pallier ces manques que nous avons développé "Tick". Il s'agit d'un système intelligent et connecté, conçu pour être discrètement installé sur votre véhicule.
 
 L'objectif principal de Tick est double :
-1.  **Alerter immédiatement** le propriétaire en cas de mouvements suspects ou non autorisés de son véhicule, grâce à une détection de mouvement.
-2.  Permettre un **suivi de localisation GPS en temps réel** en cas de vol, augmentant ainsi significativement les chances de récupération.
+1.  **Alerter immédiatement** le propriétaire en cas de mouvements suspects ou non autorisés de son véhicule. Grâce à son système de détection de mouvement intégré, le Tick est capable d'identifier des mouvements suspects ou non autorisés de votre véhicule. Si une telle activité est détectée, le propriétaire est instantanément alerté via une notification sur son smartphone. Cette réactivité peut faire toute la différence, permettant potentiellement d'interrompre le vol en cours.
+2.  Permettre un **suivi de localisation GPS en temps réel** en cas de vol, augmentant ainsi significativement les chances de récupération. Si malheureusement le vol ne peut être évité, Tick ne vous laisse pas sans ressources. Grâce à son module GPS, il permet au propriétaire de suivre la position de son véhicule en temps réel via l'application mobile. Cette information est cruciale pour les forces de l'ordre et augmente considérablement les chances de retrouver le véhicule.
 
-Tick vise donc à offrir une surveillance continue et des informations cruciales, là où les antivols traditionnels sont passifs. Il apporte une réactivité et une capacité de suivi post-vol.
+Le Tick vise donc à offrir une surveillance continue et des informations cruciales, là où les antivols traditionnels sont passifs. Il apporte une réactivité et une capacité de suivi post-vol.
 
 *(Transition vers Walid)*
 Pour vous montrer comment nous avons concrétisé cette solution, Walid va commencer par vous présenter la partie matérielle et embarquée du système."
@@ -44,13 +41,14 @@ Pour vous montrer comment nous avons concrétisé cette solution, Walid va comme
 **Walid :** "Merci Mohammed. Bonjour à tous. La partie matérielle, le 'Tick' physique, est au cœur de notre système.
 
 *   **Présenter les modules :**
+*   *(Distribuer la première page aux profs avec les images des modules)*
     Notre prototype s'articule autour de la carte **LilyGO T-SIM7000G**. C'est une solution intégrée performante qui combine un microcontrôleur **ESP32** (avec Wi-Fi et Bluetooth), un module de communication cellulaire **SIM7000G** (pour la connectivité 4G LTE-M/NB-IoT) et un récepteur **GPS** intégré.
     Pour la détection de mouvement, nous utilisons un capteur **MPU6050**, une unité de mesure inertielle avec accéléromètre et gyroscope, communiquant en I2C avec l'ESP32.
     L'alimentation est assurée par une **batterie LiPo rechargeable**, gérée par la carte LilyGO.
 
 *   **Présenter le boîtier :**
-    *(Si un boîtier existe, même simple, le montrer. Sinon, montrer l'assemblage compact des composants)*
-    Actuellement, les composants sont assemblés de manière compacte pour faciliter une intégration discrète. L'un des axes d'amélioration futurs serait un boîtier sur mesure, étanche et encore plus compact.
+    *(Montrer le boitier)*
+    Le prototype du boitier, en forme de tique, est pour le moment imprimé en 3D en PLA. Les composants sont assemblés de manière compacte à l'intérieur pour faciliter une intégration discrète. L'un des axes d'amélioration futurs serait un boîtier étanche et encore plus compact.
 
 *   **Parler des fonctionnalités :**
     L'ESP32 est programmé pour :
@@ -62,8 +60,8 @@ Pour vous montrer comment nous avons concrétisé cette solution, Walid va comme
 
 *   **Parler de l’autonomie (avec le graphe) :**
     L'autonomie est un point crucial. Nous avons travaillé sur l'optimisation de la consommation, notamment avec le mode veille profonde de l'ESP32 et la gestion de l'alimentation des modules.
-    *(Si un graphe existe, le présenter et commenter. Sinon :)*
-    Nos tests préliminaires montrent une autonomie de X jours/heures en conditions typiques, mais c'est un domaine où des améliorations sont possibles, notamment avec un choix de batterie plus conséquent ou une optimisation logicielle plus poussée. Par exemple, le mode veille est conçu pour ne réveiller le GPS et le module cellulaire que lorsque c'est strictement nécessaire.
+*   *(Distribuer la deuxième page aux profs avec les graphes d'autonomie)*
+    Nos tests préliminaires montrent une autonomie de X heures en conditions typiques, mais c'est un domaine où des améliorations sont possibles, notamment avec un choix de batterie plus conséquent ou une optimisation logicielle plus poussée. Par exemple, le mode veille est conçu pour ne réveiller le GPS et le module cellulaire que lorsque c'est strictement nécessaire. Grace à ces premières optimisations, le Tick passe à une autonomie de X heures.
 
 *(Transition vers Aymeric)*
 Maintenant qu'on a vu le dispositif physique, Aymeric va vous expliquer comment toutes ces données sont gérées et traitées dans le cloud."
@@ -76,15 +74,16 @@ Maintenant qu'on a vu le dispositif physique, Aymeric va vous expliquer comment 
 
 *   **C'est quoi AWS et pourquoi ?**
     AWS est une plateforme cloud offrant une vaste gamme de services. Nous l'avons choisie pour plusieurs raisons :
-    *   **Écosystème IoT Mature :** AWS IoT Core est spécifiquement conçu pour les appareils connectés, simplifiant la gestion des connexions et la communication.
-    *   **Modèle Serverless :** Avec des services comme AWS Lambda, nous payons uniquement pour ce que nous consommons et n'avons pas à gérer de serveurs, ce qui est idéal pour un prototype et pour la scalabilité.
-    *   **Scalabilité et Fiabilité :** AWS permet de gérer un grand nombre d'appareils et de requêtes sans effort.
-    *   **Coût :** Le "Free Tier" (niveau gratuit) d'AWS nous a permis de développer et tester sans coûts initiaux importants.
+    *   **Son écosystème IoT mature :** AWS IoT Core est spécifiquement conçu pour les appareils connectés, simplifiant la gestion des connexions et la communication.
+    *   **Son modèle serverless :** Avec des services comme AWS Lambda, nous payons uniquement pour ce que nous consommons et n'avons pas à gérer de serveurs, ce qui est idéal pour un prototype et pour la scalabilité.
+    *   **Sa scalabilité et fiabilité :** AWS permet de gérer un grand nombre d'appareils et de requêtes sans effort.
+    *   **Son coût :** Le niveau gratuit d'AWS nous a permis de développer et de profiter de toutes les fonctionnalités d'AWS sans coût. Par exemple, avec l'offre gratuite, la limite mensuelle s'élève à 1 million de requête API, 500 milles messages MQTT etc.
 
 *   **Limites quasi illimitées :**
     L'architecture serverless et les services managés d'AWS signifient que notre solution peut théoriquement s'adapter à des milliers, voire des millions d'utilisateurs et de dispositifs Tick sans avoir à re-architecturer en profondeur. La scalabilité est gérée par AWS.
 
 *   **Technologies utilisées :**
+*   *(Distribuer la troisième page aux profs avec le diagramme AWS d'Aymeric)*
     Notre infrastructure sur AWS repose sur plusieurs services clés :
     *   **AWS IoT Core :** C'est le hub central. Nos Ticks s'y connectent de manière sécurisée via MQTT. IoT Core reçoit les messages de statut, de position, d'alerte, et peut aussi transmettre des commandes de l'application vers les Ticks.
     *   **Amazon DynamoDB :** C'est notre base de données NoSQL. Nous y stockons les informations des Ticks (ID, nom, dernière position, statut, etc.) dans une table 'Ticks', et l'historique des alertes et des positions dans une table 'TickAlertHistory'. C'est scalable et performant.

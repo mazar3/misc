@@ -1,639 +1,644 @@
-Okay, I understand the strategy! This is a good approach for exam preparation. I will go through each TP, extract the `def` functions and relevant Pytorch `Module` or `LightningModule` classes, and structure them as requested.
+Absolument ! Je comprends mieux la demande de concision et de séparation claire entre markdown et code.
 
-I'll aim for:
-1.  A single comprehensive import cell at the beginning.
-2.  Unique function/class definitions. If a function is *very* similar across TPs but with minor specific changes, I might create variants (e.g., `create_model_mlp_mnist`, `create_model_cnn_mnist`) or make a more generic function if feasible.
-3.  For Pytorch models (which are classes), I'll use `## class ClassName(...)` in the markdown.
-4.  The explanations for inputs/outputs will be derived from the context in the TP protocols and code.
+Voici la version révisée, en français, avec une structure markdown/code distincte et des fonctions regroupées lorsque c'est pertinent.
 
-Let's start building your consolidated notebook.
+Je vais commencer par une fonction `initialiser_environnement` qui combinera les imports et la configuration de la seed. Ensuite, je suivrai avec les fonctions de manipulation de données, de visualisation, de création de modèles, d'entraînement, etc., en essayant de généraliser autant que possible.
 
 ```python
-# Execute this cell to ensure the notebook is in Python
+# Exécutez cette cellule pour vous assurer que le notebook est en Python
 ```
 
+## def initialiser_environnement(seed_valeur: int = 42, pytorch_deterministe: bool = True)
+Cette fonction initialise l'environnement pour les travaux pratiques. Elle effectue tous les imports de librairies nécessaires et configure la graine aléatoire (seed) pour la reproductibilité.
+
+**Entrées :**
+- `seed_valeur` (int, optionnel) : La valeur de la graine pour les générateurs de nombres aléatoires. Par défaut à 42.
+- `pytorch_deterministe` (bool, optionnel) : Si `True`, configure PyTorch pour utiliser des algorithmes déterministes, ce qui peut affecter les performances mais améliore la reproductibilité. Par défaut à `True`.
+
+**Sorties :**
+- Aucune (affiche un message de confirmation).
+
 ```python
-# ## Imports
-# This cell contains all necessary imports aggregated from TP1 through TP7.
-# Standard Libraries
 import os
 import urllib.request
 import zipfile
 import glob
-import warnings
+import warnings # Pour ignorer certains avertissements
 
-# Data Handling & Numerics
+# Manipulation de données et calculs numériques
 import numpy as np
 import pandas as pd
 
-# Plotting & Visualization
+# Visualisation
 import matplotlib.pyplot as plt
 import matplotlib.image as mpimg
 import seaborn as sns
-import cv2 # OpenCV
+import cv2 # OpenCV pour la manipulation d'images
 
-# Machine Learning - General
+# Machine Learning - Général
 from sklearn.model_selection import train_test_split, StratifiedShuffleSplit
 from sklearn.preprocessing import MinMaxScaler
 from sklearn.metrics import mean_absolute_error, r2_score, confusion_matrix, precision_score, recall_score, f1_score
 
-# Machine Learning - Models
+# Machine Learning - Modèles spécifiques
 from sklearn.linear_model import LinearRegression
 from sklearn.tree import DecisionTreeRegressor
 from sklearn.ensemble import RandomForestRegressor
 
-# PyTorch Core
+# PyTorch - Coeur
 import torch
 import torch.nn as nn
 import torch.optim as optim
 import torch.nn.functional as F
 from torch.utils.data import DataLoader, Dataset, Subset, SubsetRandomSampler, random_split
 
-# Torchvision
+# Torchvision (pour les datasets, modèles pré-entraînés, transformations d'images)
 import torchvision
-import torchvision.datasets as datasets
-import torchvision.models as models
-import torchvision.transforms.v2 as transforms # For TP5 onwards, TP4 used torchvision.transforms
-from torchvision.transforms.functional import normalize, resize, to_pil_image # For XAI
+import torchvision.datasets as tv_datasets # Renommé pour éviter conflit avec variable 'datasets'
+import torchvision.models as tv_models     # Renommé pour éviter conflit
+import torchvision.transforms.v2 as tv_transforms_v2 # Pour les TPs récents
+from torchvision.transforms.functional import normalize, resize, to_pil_image as F_to_pil_image # Spécifique pour XAI
 
-# PyTorch Lightning
+# PyTorch Lightning (pour structurer le code PyTorch)
 import pytorch_lightning as pl
-from pytorch_lightning import LightningModule, Trainer, seed_everything
+from pytorch_lightning import LightningModule, Trainer # seed_everything est déjà dans pl
 from pytorch_lightning.loggers import WandbLogger, TensorBoardLogger, CSVLogger
 from pytorch_lightning.callbacks import ModelCheckpoint, EarlyStopping
-from lightning_fabric.utilities.seed import seed_everything as fabric_seed_everything # newer versions
+from lightning_fabric.utilities.seed import seed_everything as fabric_seed_everything # Pour versions plus récentes
 
-# Torchinfo
-from torchinfo import summary
+# Torchinfo (pour résumer les modèles)
+from torchinfo import summary as torchinfo_summary # Renommé
 
-# Torchmetrics
-from torchmetrics import Accuracy # Older import style in TPs
-from torchmetrics.classification import MulticlassAccuracy, MulticlassConfusionMatrix # Newer/specific imports
+# Torchmetrics (pour les métriques)
+from torchmetrics import Accuracy as TorchmetricsAccuracy # Renommé
+from torchmetrics.classification import MulticlassAccuracy, MulticlassConfusionMatrix
 
-# WandB
+# Weights & Biases (pour le suivi des expériences)
 import wandb
 
-# Folium (Mapping)
+# Folium (pour les cartes)
 import folium
 import branca.colormap
 
-# PyCaret
-from pycaret.regression import setup as pycaret_setup, compare_models as pycaret_compare_models, tune_model as pycaret_tune_model, evaluate_model as pycaret_evaluate_model, predict_model as pycaret_predict_model
+# PyCaret (pour l' AutoML)
+from pycaret.regression import setup as pycaret_setup, compare_models as pycaret_compare_models, \
+                                tune_model as pycaret_tune_model, evaluate_model as pycaret_evaluate_model, \
+                                predict_model as pycaret_predict_model
 
-# XAI Libraries (TP7)
+# Librairies XAI (Explicabilité)
 from torchcam.methods import GradCAM, LayerCAM
-from torchcam.utils import overlay_mask
+from torchcam.utils import overlay_mask as torchcam_overlay_mask # Renommé
 from captum.attr import GradientShap, Occlusion, IntegratedGradients, DeepLift
 from captum.attr import visualization as captum_viz
-# For TIS (Transformer Input Sampling) - assuming it's in a subfolder or installed
-# from Transformer_Input_Sampling.tis import TIS # This might require specific path setup
-import timm
-# import fast_pytorch_kmeans # If used by TIS
-from skimage.transform import resize as skimage_resize # for RISE example potentially
-from einops import rearrange # Often used with Transformers
+# Pour TIS (Transformer Input Sampling) - nécessite une installation/configuration spécifique
+# from Transformer_Input_Sampling.tis import TIS
+import timm # Souvent utilisé avec les Transformers ou modèles d'images avancés
+# import fast_pytorch_kmeans # Si utilisé par TIS
+from skimage.transform import resize as skimage_resize # Pour l'exemple RISE potentiellement
+from einops import rearrange # Souvent utilisé avec les Transformers
 
-# Pillow (PIL)
+# Pillow (PIL) - Manipulation d'images
 from PIL import Image
 
-# Other utilities
+# Utilitaires IPython
 from IPython.display import display
 
-# Configuration for reproducibility and environment
-# seed_everything(42, workers=True) # Ensure this is called once if needed globally
-# torch.use_deterministic_algorithms(True) # If strict determinism is required
-# os.environ["CUBLAS_WORKSPACE_CONFIG"] = ":4096:8" # For CUDA determinism
-warnings.filterwarnings('ignore', category=UserWarning, message='The given NumPy array is not writable')
+def initialiser_environnement(seed_valeur: int = 42, pytorch_deterministe: bool = True):
+    """
+    Initialise les imports globaux et la graine aléatoire pour la reproductibilité.
+    """
+    pl.seed_everything(seed_valeur, workers=True) # workers=True est souvent par défaut ou recommandé
+
+    if pytorch_deterministe:
+        torch.backends.cudnn.deterministic = True
+        torch.backends.cudnn.benchmark = False
+        # Certaines versions de PyTorch nécessitent ceci pour une déterminisme complet sur GPU :
+        # torch.use_deterministic_algorithms(True)
+        # Et parfois une variable d'environnement pour CUBLAS :
+        # os.environ["CUBLAS_WORKSPACE_CONFIG"] = ":4096:8" # ou ":16:8"
+
+    # Ignorer les avertissements spécifiques si nécessaire, par exemple :
+    warnings.filterwarnings('ignore', category=UserWarning, message='The given NumPy array is not writable')
+    # Désactiver les avertissements de PyTorch Lightning sur les versions de packages
+    warnings.filterwarnings("ignore", ".*does not have many workers.*")
+    warnings.filterwarnings("ignore", ".*Checkpoint directory.*exists and is not empty.*")
+
+
+    print(f"Environnement initialisé. Graine aléatoire (seed) configurée à {seed_valeur}.")
+    print(f"Torch version: {torch.__version__}")
+    print(f"Torchvision version: {torchvision.__version__}")
+    print(f"PyTorch Lightning version: {pl.__version__}")
+    if torch.cuda.is_available():
+        print(f"GPU disponible: {torch.cuda.get_device_name(0)}")
+    else:
+        print("GPU non disponible, utilisation du CPU.")
+
+# Appel pour initialiser lors de l'exécution du notebook
+# initialiser_environnement()
 ```
 
-```python
-## def seed_everything_global(seed: int, workers: bool = True)
-# Sets the seed for random number generators in PyTorch, NumPy, and Python's random module
-# to ensure reproducibility. It also configures PyTorch to use deterministic algorithms
-# if available and sets environment variables for CUDA determinism.
+## def creer_dataframe_simple(dictionnaire_donnees: dict)
+Crée un DataFrame Pandas à partir d'un dictionnaire Python.
+Utilisé dans le TP1 pour une introduction basique à Pandas.
 
-# Entrées :
-# - seed (int): The seed value to use for all random number generators.
-# - workers (bool): If True, sets the `workers` argument in `pytorch_lightning.seed_everything`.
+**Entrées :**
+- `dictionnaire_donnees` (dict) : Un dictionnaire où les clés sont les noms des colonnes et les valeurs sont des listes représentant les données des colonnes.
 
-# Sorties :
-# - None
-def seed_everything_global(seed: int, workers: bool = True):
-    """
-    Sets seeds for reproducibility across PyTorch, NumPy, and Python's random module.
-    Also configures PyTorch for deterministic behavior.
-    """
-    # PyTorch Lightning's seed_everything also handles torch, numpy, and random.
-    pl.seed_everything(seed, workers=workers)
-
-    # For stricter determinism with CUDA (optional, might impact performance)
-    # torch.backends.cudnn.deterministic = True
-    # torch.backends.cudnn.benchmark = False
-    # torch.use_deterministic_algorithms(True)
-    # os.environ["CUBLAS_WORKSPACE_CONFIG"] = ":4096:8" # Or ":16:8"
-    print(f"Global seed set to {seed}")
-
-# Example of calling it once at the beginning of a script
-# seed_everything_global(42)
-```
+**Sorties :**
+- `df` (pd.DataFrame) : Le DataFrame Pandas créé à partir du dictionnaire.
 
 ```python
-## def create_simple_dataframe_pandas(data_dict: dict)
-# Creates a Pandas DataFrame from a Python dictionary.
-# This was used in TP1 for a basic introduction to Pandas.
-
-# Entrées :
-# - data_dict (dict): A dictionary where keys are column names and values are lists representing column data.
-
-# Sorties :
-# - df (pd.DataFrame): The Pandas DataFrame created from the dictionary.
-import pandas as pd
-
-def create_simple_dataframe_pandas(data_dict: dict) -> pd.DataFrame:
+def creer_dataframe_simple(dictionnaire_donnees: dict) -> pd.DataFrame:
     """
-    Creates a Pandas DataFrame from a Python dictionary.
-    Example: data = {"col1": [1, 2], "col2": [3, 4]}
+    Crée un DataFrame Pandas à partir d'un dictionnaire Python.
+    Exemple: donnees = {"col1": [1, 2], "col2": [3, 4]}
     """
-    df = pd.DataFrame(data_dict)
+    df = pd.DataFrame(dictionnaire_donnees)
     return df
 ```
 
+## def trier_dataframe(df: pd.DataFrame, colonnes_tri: list, ordres_tri: list)
+Trie un DataFrame Pandas selon une ou plusieurs colonnes, chacune avec un ordre de tri spécifié.
+Utilisé dans le TP1 pour l'exploration des données.
+
+**Entrées :**
+- `df` (pd.DataFrame) : Le DataFrame à trier.
+- `colonnes_tri` (list) : Une liste de noms de colonnes pour le tri.
+- `ordres_tri` (list) : Une liste de booléens correspondant à `colonnes_tri`,
+où `True` signifie un tri ascendant et `False` un tri descendant.
+
+**Sorties :**
+- `df_trie` (pd.DataFrame) : Le DataFrame trié.
+
 ```python
-## def sort_dataframe_pandas(df: pd.DataFrame, by_columns: list, ascending_orders: list)
-# Sorts a Pandas DataFrame by one or more columns, each with a specified sort order.
-# Used in TP1 for data exploration.
-
-# Entrées :
-# - df (pd.DataFrame): The DataFrame to be sorted.
-# - by_columns (list): A list of column names to sort by.
-# - ascending_orders (list): A list of booleans corresponding to `by_columns`,
-#                            where True means ascending and False means descending.
-
-# Sorties :
-# - df_sorted (pd.DataFrame): The sorted DataFrame.
-import pandas as pd
-
-def sort_dataframe_pandas(df: pd.DataFrame, by_columns: list, ascending_orders: list) -> pd.DataFrame:
+def trier_dataframe(df: pd.DataFrame, colonnes_tri: list, ordres_tri: list) -> pd.DataFrame:
     """
-    Sorts a Pandas DataFrame by specified columns and orders.
-    Example: sort_dataframe_pandas(df, by_columns=["population", "superficie_km2"], ascending_orders=[False, False])
+    Trie un DataFrame Pandas selon les colonnes et ordres spécifiés.
+    Exemple: trier_dataframe(df, colonnes_tri=["population", "superficie_km2"], ordres_tri=[False, False])
     """
-    if len(by_columns) != len(ascending_orders):
-        raise ValueError("Length of by_columns and ascending_orders must be the same.")
-    df_sorted = df.sort_values(by=by_columns, ascending=ascending_orders)
-    return df_sorted
+    if len(colonnes_tri) != len(ordres_tri):
+        raise ValueError("La longueur de colonnes_tri et ordres_tri doit être la même.")
+    df_trie = df.sort_values(by=colonnes_tri, ascending=ordres_tri)
+    return df_trie
 ```
 
+## def visualiser_barres_seaborn(df: pd.DataFrame, col_x: str, col_y: str, titre: str, label_x: str, label_y: str, palette: str = "Blues_r", col_couleur_hue: str = None, taille_figure: tuple = (8, 5), orientation: str = 'h')
+Crée un diagramme en barres (horizontal ou vertical) en utilisant Seaborn.
+Utilisé dans le TP1 pour visualiser les populations/superficies des villes.
+
+**Entrées :**
+- `df` (pd.DataFrame) : Le DataFrame contenant les données.
+- `col_x` (str) : Le nom de la colonne pour l'axe des x (ou l'axe des valeurs pour un diagramme horizontal).
+- `col_y` (str) : Le nom de la colonne pour l'axe des y (ou l'axe des catégories pour un diagramme horizontal).
+- `titre` (str) : Le titre du graphique.
+- `label_x` (str) : L'étiquette pour l'axe des x.
+- `label_y` (str) : L'étiquette pour l'axe des y.
+- `palette` (str, optionnel) : Palette de couleurs Seaborn. Par défaut "Blues_r".
+- `col_couleur_hue` (str, optionnel) : Nom de la colonne pour l'encodage des couleurs (hue). Par défaut `None`.
+- `taille_figure` (tuple, optionnel) : Taille de la figure. Par défaut (8, 5).
+- `orientation` (str, optionnel) : Orientation du diagramme en barres, 'h' pour horizontal, 'v' pour vertical. Par défaut 'h'.
+
+**Sorties :**
+- Aucune (affiche le graphique).
+
 ```python
-## def plot_bar_seaborn(df: pd.DataFrame, x_col: str, y_col: str, title: str, xlabel: str, ylabel: str, palette: str = "Blues_r", hue_col: str = None, figsize: tuple = (8, 5), orient: str = 'h')
-# Creates a bar plot (horizontal or vertical) using Seaborn.
-# Used in TP1 for visualizing city populations/areas.
-
-# Entrées :
-# - df (pd.DataFrame): The DataFrame containing the data.
-# - x_col (str): The name of the column for the x-axis (or value-axis for horizontal).
-# - y_col (str): The name of the column for the y-axis (or category-axis for horizontal).
-# - title (str): The title of the plot.
-# - xlabel (str): The label for the x-axis.
-# - ylabel (str): The label for the y-axis.
-# - palette (str, optional): Seaborn color palette. Defaults to "Blues_r".
-# - hue_col (str, optional): Column name for color encoding. Defaults to None.
-# - figsize (tuple, optional): Figure size. Defaults to (8, 5).
-# - orient (str, optional): Orientation of the bar plot, 'h' for horizontal, 'v' for vertical. Defaults to 'h'.
-
-
-# Sorties :
-# - None (displays the plot).
-import seaborn as sns
-import matplotlib.pyplot as plt
-import pandas as pd
-
-def plot_bar_seaborn(df: pd.DataFrame, x_col: str, y_col: str, title: str, xlabel: str, ylabel: str, palette: str = "Blues_r", hue_col: str = None, figsize: tuple = (8, 5), orient: str = 'h'):
+def visualiser_barres_seaborn(df: pd.DataFrame, col_x: str, col_y: str, titre: str, label_x: str, label_y: str, palette: str = "Blues_r", col_couleur_hue: str = None, taille_figure: tuple = (8, 5), orientation: str = 'h'):
     """
-    Creates a bar plot using Seaborn.
-    For horizontal bar plot (orient='h'): y_col is categorical, x_col is numerical.
-    For vertical bar plot (orient='v'): x_col is categorical, y_col is numerical.
+    Crée un diagramme en barres avec Seaborn.
+    Pour un diagramme horizontal (orientation='h'): col_y est catégorique, col_x est numérique.
+    Pour un diagramme vertical (orientation='v'): col_x est catégorique, col_y est numérique.
     """
     sns.set_theme(style="whitegrid")
-    plt.figure(figsize=figsize)
-    if orient == 'h':
-        sns.barplot(x=x_col, y=y_col, data=df, palette=palette, hue=hue_col, orient='h')
-    elif orient == 'v':
-        sns.barplot(x=x_col, y=y_col, data=df, palette=palette, hue=hue_col, orient='v')
+    plt.figure(figsize=taille_figure)
+    if orientation == 'h':
+        sns.barplot(x=col_x, y=col_y, data=df, palette=palette, hue=col_couleur_hue, orient='h')
+    elif orientation == 'v':
+        sns.barplot(x=col_x, y=col_y, data=df, palette=palette, hue=col_couleur_hue, orient='v')
     else:
-        raise ValueError("orient must be 'h' or 'v'")
-    plt.xlabel(xlabel)
-    plt.ylabel(ylabel)
-    plt.title(title)
+        raise ValueError("L'orientation doit être 'h' ou 'v'")
+    plt.xlabel(label_x)
+    plt.ylabel(label_y)
+    plt.title(titre)
     plt.show()
 ```
 
+## def pretraiter_caracteristiques_housing_californie(dataframe_housing: pd.DataFrame)
+Prétraite les caractéristiques pour le jeu de données des logements en Californie (utilisé dans TP1/TP2).
+Sélectionne des caractéristiques spécifiques et crée une caractéristique synthétique "rooms_per_person".
+
+**Entrées :**
+- `dataframe_housing` (pd.DataFrame) : Le DataFrame d'entrée avec les données des logements en Californie.
+  Colonnes attendues : "latitude", "longitude", "housing_median_age", "total_rooms",
+  "total_bedrooms", "population", "households", "median_income".
+
+**Sorties :**
+- `caracteristiques_traitees` (pd.DataFrame) : DataFrame avec les caractéristiques sélectionnées et créées.
+
 ```python
-## def preprocess_housing_features_v1(california_housing_dataframe: pd.DataFrame)
-# Preprocesses features for the California housing dataset (as in TP1/TP2).
-# Selects specific features and creates a synthetic feature "rooms_per_person".
-
-# Entrées :
-# - california_housing_dataframe (pd.DataFrame): The input DataFrame with California housing data.
-#   Expected columns: "latitude", "longitude", "housing_median_age", "total_rooms",
-#   "total_bedrooms", "population", "households", "median_income".
-
-# Sorties :
-# - processed_features (pd.DataFrame): DataFrame with selected and engineered features.
-import pandas as pd
-
-def preprocess_housing_features_v1(california_housing_dataframe: pd.DataFrame) -> pd.DataFrame:
+def pretraiter_caracteristiques_housing_californie(dataframe_housing: pd.DataFrame) -> pd.DataFrame:
     """
-    Selects features and creates a synthetic feature "rooms_per_person"
-    for the California housing dataset (TP1/TP2 version).
+    Sélectionne des caractéristiques et crée la caractéristique synthétique "rooms_per_person"
+    pour le jeu de données des logements en Californie (version TP1/TP2).
     """
-    processed_features = california_housing_dataframe.copy()
-    selected_features = ["latitude", "longitude", "housing_median_age", "total_rooms",
-                         "total_bedrooms", "population", "households", "median_income"]
-    # Create a synthetic feature.
-    processed_features["rooms_per_person"] = california_housing_dataframe["total_rooms"] / california_housing_dataframe["population"]
+    caracteristiques_traitees = dataframe_housing.copy()
+    colonnes_selectionnees = ["latitude", "longitude", "housing_median_age", "total_rooms",
+                              "total_bedrooms", "population", "households", "median_income"]
     
-    # Add the new feature to the list of selected features if it's not already implicitly included
-    # and ensure only existing columns are selected if some original ones are missing.
-    final_selected_features = selected_features + ["rooms_per_person"]
+    # Vérifier si les colonnes nécessaires pour la nouvelle caractéristique existent
+    if "total_rooms" in dataframe_housing.columns and "population" in dataframe_housing.columns and dataframe_housing["population"].ne(0).all():
+        caracteristiques_traitees["rooms_per_person"] = dataframe_housing["total_rooms"] / dataframe_housing["population"]
+        colonnes_finales_selectionnees = colonnes_selectionnees + ["rooms_per_person"]
+    else:
+        print("Avertissement : Les colonnes 'total_rooms' ou 'population' sont manquantes ou 'population' contient des zéros. La caractéristique 'rooms_per_person' ne peut pas être créée.")
+        colonnes_finales_selectionnees = colonnes_selectionnees
+
+    # Filtrer pour ne garder que les colonnes existantes dans le DataFrame traité
+    colonnes_existantes_a_selectionner = [col for col in colonnes_finales_selectionnees if col in caracteristiques_traitees.columns]
     
-    # Filter out any feature names that might not exist in processed_features, though "rooms_per_person" was just added.
-    # This primarily handles cases where input `california_housing_dataframe` might be missing some `selected_features`.
-    existing_features_to_select = [col for col in final_selected_features if col in processed_features.columns]
-    
-    return processed_features[existing_features_to_select]
+    return caracteristiques_traitees[colonnes_existantes_a_selectionner]
 ```
 
+## def pretraiter_cibles_housing_californie(dataframe_housing: pd.DataFrame)
+Prétraite la variable cible "median_house_value" pour le jeu de données des logements en Californie (utilisé dans TP1/TP2).
+Met à l'échelle "median_house_value" en la divisant par 1000.
+
+**Entrées :**
+- `dataframe_housing` (pd.DataFrame) : Le DataFrame d'entrée avec les données des logements en Californie.
+  Colonne attendue : "median_house_value".
+
+**Sorties :**
+- `cibles_traitees` (pd.Series) : Série Pandas contenant la "median_house_value" mise à l'échelle.
+
 ```python
-## def preprocess_housing_targets_v1(california_housing_dataframe: pd.DataFrame)
-# Preprocesses the target variable "median_house_value" for the California housing dataset (as in TP1/TP2).
-# Scales the "median_house_value" by dividing by 1000.
-
-# Entrées :
-# - california_housing_dataframe (pd.DataFrame): The input DataFrame with California housing data.
-#   Expected column: "median_house_value".
-
-# Sorties :
-# - processed_targets (pd.Series): Series containing the scaled "median_house_value".
-import pandas as pd
-
-def preprocess_housing_targets_v1(california_housing_dataframe: pd.DataFrame) -> pd.Series:
+def pretraiter_cibles_housing_californie(dataframe_housing: pd.DataFrame) -> pd.Series:
     """
-    Scales the "median_house_value" by dividing by 1000.0 (TP1/TP2 version).
-    Returns only the target column as a Series.
+    Met à l'échelle "median_house_value" en la divisant par 1000.0 (version TP1/TP2).
+    Retourne uniquement la colonne cible sous forme de Série.
     """
-    processed_data = california_housing_dataframe.copy() # Make a copy to avoid SettingWithCopyWarning
-    processed_data["median_house_value"] = processed_data["median_house_value"] / 1000.0
-    return processed_data["median_house_value"]
+    if "median_house_value" not in dataframe_housing.columns:
+        raise KeyError("La colonne 'median_house_value' est introuvable dans le DataFrame.")
+        
+    donnees_traitees = dataframe_housing.copy()
+    donnees_traitees["median_house_value"] = donnees_traitees["median_house_value"] / 1000.0
+    return donnees_traitees["median_house_value"]
 ```
 
+## def visualiser_donnees_housing_dispersion_carte(donnees_entrainement: pd.DataFrame, donnees_validation: pd.DataFrame)
+Visualise les données d'entraînement et de validation pour les logements en Californie sur des nuages de points,
+simulant une carte en utilisant la longitude et la latitude, colorée par "median_house_value".
+Utilisé dans le TP1.
+
+**Entrées :**
+- `donnees_entrainement` (pd.DataFrame) : DataFrame pour l'entraînement, doit inclure "longitude", "latitude", "median_house_value".
+- `donnees_validation` (pd.DataFrame) : DataFrame pour la validation, doit inclure "longitude", "latitude", "median_house_value".
+
+**Sorties :**
+- Aucune (affiche le graphique).
+
 ```python
-## def plot_housing_data_scatter_map(training_examples: pd.DataFrame, validation_examples: pd.DataFrame)
-# Visualizes training and validation data for California housing on a scatter plot,
-# mimicking a map using longitude and latitude, colored by median_house_value.
-# Used in TP1.
-
-# Entrées :
-# - training_examples (pd.DataFrame): DataFrame for training, must include "longitude", "latitude", "median_house_value".
-# - validation_examples (pd.DataFrame): DataFrame for validation, must include "longitude", "latitude", "median_house_value".
-
-# Sorties :
-# - None (displays the plot).
-import matplotlib.pyplot as plt
-import pandas as pd
-
-def plot_housing_data_scatter_map(training_examples: pd.DataFrame, validation_examples: pd.DataFrame):
+def visualiser_donnees_housing_dispersion_carte(donnees_entrainement: pd.DataFrame, donnees_validation: pd.DataFrame):
   """
-  Visualizes training and validation housing data on scatter plots.
-  Longitude and latitude are used for x and y axes.
-  Points are colored by median_house_value.
+  Visualise les données d'entraînement et de validation des logements sur des nuages de points.
+  La longitude et la latitude sont utilisées pour les axes x et y.
+  Les points sont colorés par median_house_value.
   """
   plt.figure(figsize=(13, 8))
 
-  # Validation Data Plot
+  # Graphique des données de validation
   ax1 = plt.subplot(1, 2, 1)
-  ax1.set_title("Validation Data")
+  ax1.set_title("Données de Validation")
   ax1.set_autoscaley_on(False)
   ax1.set_ylim([32, 43])
   ax1.set_autoscalex_on(False)
   ax1.set_xlim([-126, -112])
-  plt.scatter(validation_examples["longitude"],
-              validation_examples["latitude"],
-              cmap="coolwarm",
-              c=validation_examples["median_house_value"] / validation_examples["median_house_value"].max())
+  # Vérifier si median_house_value existe et n'est pas nul avant la division
+  if "median_house_value" in donnees_validation.columns and not donnees_validation["median_house_value"].isnull().all():
+      max_val_val = donnees_validation["median_house_value"].max()
+      if max_val_val == 0: max_val_val = 1 # Éviter la division par zéro si max est 0
+      couleurs_val = donnees_validation["median_house_value"] / max_val_val
+  else:
+      couleurs_val = "blue" # Couleur par défaut si la colonne est manquante ou toutes nulles
+      print("Avertissement: 'median_house_value' manquante ou nulle dans les données de validation pour la coloration.")
+
+  scatter_val = ax1.scatter(donnees_validation["longitude"],
+                            donnees_validation["latitude"],
+                            cmap="coolwarm",
+                            c=couleurs_val)
   ax1.set_xlabel("Longitude")
   ax1.set_ylabel("Latitude")
+  if isinstance(couleurs_val, pd.Series) or isinstance(couleurs_val, np.ndarray): # Ajouter une colorbar si les couleurs sont basées sur des données
+    plt.colorbar(scatter_val, ax=ax1, label="Valeur normalisée de la maison")
 
-  # Training Data Plot
+
+  # Graphique des données d'entraînement
   ax2 = plt.subplot(1,2,2)
-  ax2.set_title("Training Data")
+  ax2.set_title("Données d'Entraînement")
   ax2.set_autoscaley_on(False)
   ax2.set_ylim([32, 43])
   ax2.set_autoscalex_on(False)
   ax2.set_xlim([-126, -112])
-  plt.scatter(training_examples["longitude"],
-              training_examples["latitude"],
-              cmap="coolwarm",
-              c=training_examples["median_house_value"] / training_examples["median_house_value"].max())
+  if "median_house_value" in donnees_entrainement.columns and not donnees_entrainement["median_house_value"].isnull().all():
+      max_val_train = donnees_entrainement["median_house_value"].max()
+      if max_val_train == 0: max_val_train = 1
+      couleurs_train = donnees_entrainement["median_house_value"] / max_val_train
+  else:
+      couleurs_train = "red"
+      print("Avertissement: 'median_house_value' manquante ou nulle dans les données d'entraînement pour la coloration.")
+
+  scatter_train = ax2.scatter(donnees_entrainement["longitude"],
+                              donnees_entrainement["latitude"],
+                              cmap="coolwarm",
+                              c=couleurs_train)
   ax2.set_xlabel("Longitude")
   ax2.set_ylabel("Latitude")
+  if isinstance(couleurs_train, pd.Series) or isinstance(couleurs_train, np.ndarray):
+    plt.colorbar(scatter_train, ax=ax2, label="Valeur normalisée de la maison")
   
   plt.tight_layout()
   plt.show()
 ```
 
+## def visualiser_carte_correlation(df: pd.DataFrame, methode: str = 'pearson', taille_figure: tuple = (12, 8), afficher_annotations: bool = True, format_annotations: str = '.2f', palette_couleurs: str = 'coolwarm')
+Calcule et affiche une carte de chaleur (heatmap) des corrélations pour un DataFrame.
+Utilisé dans le TP1.
+
+**Entrées :**
+- `df` (pd.DataFrame) : Le DataFrame pour lequel calculer les corrélations.
+- `methode` (str, optionnel) : Méthode de corrélation ('pearson', 'kendall', 'spearman'). Par défaut 'pearson'.
+- `taille_figure` (tuple, optionnel) : Taille de la figure. Par défaut (12, 8).
+- `afficher_annotations` (bool, optionnel) : Si `True`, écrit la valeur des données dans chaque cellule. Par défaut `True`.
+- `format_annotations` (str, optionnel) : Format de chaîne à utiliser lorsque `afficher_annotations` est `True`. Par défaut '.2f'.
+- `palette_couleurs` (str, optionnel) : Nom ou objet de la palette de couleurs Matplotlib. Par défaut 'coolwarm'.
+
+**Sorties :**
+- `matrice_corr` (pd.DataFrame) : La matrice de corrélation calculée.
+- Affiche la carte de chaleur.
+
 ```python
-## def plot_correlation_heatmap(df: pd.DataFrame, method: str = 'pearson', figsize: tuple = (12, 8), annot: bool = True, fmt: str = '.2f', cmap: str = 'coolwarm')
-# Calculates and displays a correlation heatmap for a DataFrame.
-# Used in TP1.
-
-# Entrées :
-# - df (pd.DataFrame): The DataFrame for which to calculate correlations.
-# - method (str, optional): Method of correlation ('pearson', 'kendall', 'spearman'). Defaults to 'pearson'.
-# - figsize (tuple, optional): Figure size. Defaults to (12, 8).
-# - annot (bool, optional): If True, write the data value in each cell. Defaults to True.
-# - fmt (str, optional): String formatting code to use when `annot` is True. Defaults to '.2f'.
-# - cmap (str, optional): Matplotlib colormap name or object. Defaults to 'coolwarm'.
-
-# Sorties :
-# - corr_matrix (pd.DataFrame): The calculated correlation matrix.
-# - Displays the heatmap plot.
-import pandas as pd
-import seaborn as sns
-import matplotlib.pyplot as plt
-
-def plot_correlation_heatmap(df: pd.DataFrame, method: str = 'pearson', figsize: tuple = (12, 8), annot: bool = True, fmt: str = '.2f', cmap: str = 'coolwarm') -> pd.DataFrame:
+def visualiser_carte_correlation(df: pd.DataFrame, methode: str = 'pearson', taille_figure: tuple = (12, 8), afficher_annotations: bool = True, format_annotations: str = '.2f', palette_couleurs: str = 'coolwarm') -> pd.DataFrame:
     """
-    Calculates and displays a correlation heatmap for the given DataFrame.
+    Calcule et affiche une carte de chaleur des corrélations pour le DataFrame donné.
     """
-    plt.figure(figsize=figsize)
-    corr_matrix = df.corr(method=method)
-    sns.heatmap(corr_matrix, annot=annot, fmt=fmt, cmap=cmap, center=0)
-    plt.title(f"Correlation Matrix ({method.capitalize()})")
+    plt.figure(figsize=taille_figure)
+    matrice_corr = df.corr(method=methode)
+    sns.heatmap(matrice_corr, annot=afficher_annotations, fmt=format_annotations, cmap=palette_couleurs, center=0)
+    plt.title(f"Matrice de Corrélation ({methode.capitalize()})")
     plt.show()
-    return corr_matrix
+    return matrice_corr
 ```
 
+## def visualiser_distribution_variable(serie_pandas: pd.Series, titre: str, label_x: str, label_y: str = "Fréquence", nb_bins: int = 30, afficher_kde: bool = True, taille_figure: tuple = (10, 6), couleur: str = 'blue')
+Affiche la distribution d'une variable numérique en utilisant `histplot` de Seaborn.
+Utilisé dans le TP1.
+
+**Entrées :**
+- `serie_pandas` (pd.Series) : La Série Pandas dont la distribution doit être tracée.
+- `titre` (str) : Le titre du graphique.
+- `label_x` (str) : L'étiquette pour l'axe des x.
+- `label_y` (str, optionnel) : L'étiquette pour l'axe des y. Par défaut "Fréquence".
+- `nb_bins` (int, optionnel) : Nombre de bins pour l'histogramme. Par défaut 30.
+- `afficher_kde` (bool, optionnel) : S'il faut tracer une estimation de la densité du noyau (KDE). Par défaut `True`.
+- `taille_figure` (tuple, optionnel) : Taille de la figure. Par défaut (10, 6).
+- `couleur` (str, optionnel) : Couleur du graphique. Par défaut 'blue'.
+
+**Sorties :**
+- Aucune (affiche le graphique).
+
 ```python
-## def plot_distribution_sns(series: pd.Series, title: str, xlabel: str, ylabel: str = "Frequency", bins: int = 30, kde: bool = True, figsize: tuple = (10, 6), color: str = 'blue')
-# Displays the distribution of a numerical variable using Seaborn's histplot (distplot is deprecated).
-# Used in TP1.
-
-# Entrées :
-# - series (pd.Series): The Pandas Series whose distribution is to be plotted.
-# - title (str): The title of the plot.
-# - xlabel (str): The label for the x-axis.
-# - ylabel (str, optional): The label for the y-axis. Defaults to "Frequency".
-# - bins (int, optional): Number of bins for the histogram. Defaults to 30.
-# - kde (bool, optional): Whether to plot a kernel density estimate. Defaults to True.
-# - figsize (tuple, optional): Figure size. Defaults to (10, 6).
-# - color (str, optional): Color of the plot. Defaults to 'blue'.
-
-# Sorties :
-# - None (displays the plot).
-import pandas as pd
-import seaborn as sns
-import matplotlib.pyplot as plt
-
-def plot_distribution_sns(series: pd.Series, title: str, xlabel: str, ylabel: str = "Frequency", bins: int = 30, kde: bool = True, figsize: tuple = (10, 6), color: str = 'blue'):
+def visualiser_distribution_variable(serie_pandas: pd.Series, titre: str, label_x: str, label_y: str = "Fréquence", nb_bins: int = 30, afficher_kde: bool = True, taille_figure: tuple = (10, 6), couleur: str = 'blue'):
     """
-    Displays the distribution of a numerical variable using Seaborn's histplot.
+    Affiche la distribution d'une variable numérique en utilisant histplot de Seaborn.
     """
-    plt.figure(figsize=figsize)
-    sns.histplot(series, kde=kde, bins=bins, color=color)
-    plt.title(title)
-    plt.xlabel(xlabel)
-    plt.ylabel(ylabel)
+    plt.figure(figsize=taille_figure)
+    sns.histplot(serie_pandas, kde=afficher_kde, bins=nb_bins, color=couleur)
+    plt.title(titre)
+    plt.xlabel(label_x)
+    plt.ylabel(label_y)
     plt.show()
 ```
 
+## def visualiser_donnees_sur_carte_folium(donnees: pd.DataFrame, nom_split_donnees: str, col_latitude: str = 'latitude', col_longitude: str = 'longitude', col_valeur: str = 'median_house_value', lat_centre: float = 37.16, lon_centre: float = -120.43, zoom_initial: int = 6)
+Visualise des points de données sur une carte Folium, colorés par une valeur spécifiée.
+Utilisé dans le TP1.
+
+**Entrées :**
+- `donnees` (pd.DataFrame) : DataFrame contenant la latitude, la longitude et la valeur à visualiser.
+- `nom_split_donnees` (str) : Nom du découpage des données (ex: "Données d'Entraînement") pour le titre.
+- `col_latitude` (str, optionnel) : Nom de la colonne de latitude. Par défaut 'latitude'.
+- `col_longitude` (str, optionnel) : Nom de la colonne de longitude. Par défaut 'longitude'.
+- `col_valeur` (str, optionnel) : Nom de la colonne dont les valeurs détermineront la couleur des points. Par défaut 'median_house_value'.
+- `lat_centre` (float, optionnel) : Latitude pour le centre de la carte. Par défaut 37.16.
+- `lon_centre` (float, optionnel) : Longitude pour le centre de la carte. Par défaut -120.43.
+- `zoom_initial` (int, optionnel) : Niveau de zoom initial pour la carte. Par défaut 6.
+
+**Sorties :**
+- `m` (folium.Map) : L'objet carte Folium.
+
 ```python
-## def visualize_data_on_map_folium(data: pd.DataFrame, data_split_name: str, lat_col: str = 'latitude', lon_col: str = 'longitude', value_col: str = 'median_house_value', center_lat: float = 37.16, center_lon: float = -120.43, zoom: int = 6)
-# Visualizes data points on a Folium map, colored by a specified value.
-# Used in TP1.
-
-# Entrées :
-# - data (pd.DataFrame): DataFrame containing latitude, longitude, and the value to visualize.
-# - data_split_name (str): Name of the data split (e.g., "Training Data", "Validation Data") for the title.
-# - lat_col (str, optional): Name of the latitude column. Defaults to 'latitude'.
-# - lon_col (str, optional): Name of the longitude column. Defaults to 'longitude'.
-# - value_col (str, optional): Name of the column whose values will determine point color. Defaults to 'median_house_value'.
-# - center_lat (float, optional): Latitude for the map center. Defaults to 37.16.
-# - center_lon (float, optional): Longitude for the map center. Defaults to -120.43.
-# - zoom (int, optional): Initial zoom level for the map. Defaults to 6.
-
-
-# Sorties :
-# - m (folium.Map): The Folium map object.
-import pandas as pd
-import folium
-import branca.colormap
-
-def visualize_data_on_map_folium(data: pd.DataFrame, data_split_name: str, lat_col: str = 'latitude', lon_col: str = 'longitude', value_col: str = 'median_house_value', center_lat: float = 37.16, center_lon: float = -120.43, zoom: int = 6) -> folium.Map:
+def visualiser_donnees_sur_carte_folium(donnees: pd.DataFrame, nom_split_donnees: str, col_latitude: str = 'latitude', col_longitude: str = 'longitude', col_valeur: str = 'median_house_value', lat_centre: float = 37.16, lon_centre: float = -120.43, zoom_initial: int = 6) -> folium.Map:
     """
-    Visualizes data points on a Folium map, colored by a specified value.
+    Visualise des points de données sur une carte Folium, colorés par une valeur spécifiée.
     """
-    m = folium.Map(location=[center_lat, center_lon], tiles="OpenStreetMap", zoom_start=zoom)
+    m = folium.Map(location=[lat_centre, lon_centre], tiles="OpenStreetMap", zoom_start=zoom_initial)
 
-    # Define a colormap based on the median house value
-    # Ensure value_col exists and is numeric
-    if value_col not in data.columns or not pd.api.types.is_numeric_dtype(data[value_col]):
-        print(f"Warning: Column '{value_col}' not found or not numeric. Using default radius/color.")
-        use_colormap = False
+    # Définir une palette de couleurs basée sur la valeur médiane des maisons
+    # S'assurer que col_valeur existe et est numérique
+    if col_valeur not in donnees.columns or not pd.api.types.is_numeric_dtype(donnees[col_valeur]):
+        print(f"Avertissement : Colonne '{col_valeur}' introuvable ou non numérique. Utilisation d'une couleur/rayon par défaut.")
+        utiliser_palette = False
     else:
-        use_colormap = True
-        min_val = data[value_col].min()
-        max_val = data[value_col].max()
-        if min_val == max_val: # Avoid division by zero if all values are the same
-             colormap = branca.colormap.LinearColormap(colors=['blue', 'blue'], index=[0,1], vmin=0, vmax=1)
+        utiliser_palette = True
+        val_min = donnees[col_valeur].min()
+        val_max = donnees[col_valeur].max()
+        if val_min == val_max: # Éviter la division par zéro si toutes les valeurs sont identiques
+             palette_couleurs = branca.colormap.LinearColormap(colors=['blue', 'blue'], index=[0,1], vmin=0, vmax=1)
         else:
-            colormap = branca.colormap.LinearColormap(colors=['blue', 'red'], index=[min_val, max_val], vmin=min_val, vmax=max_val)
+            # Création de l'index pour la colormap. Par exemple, utiliser min, median, max.
+            # Ou simplement min et max comme dans le code original du TP.
+            # index_palette = [val_min, (val_min + val_max) / 2, val_max]
+            # couleurs_palette = ['blue', 'yellow', 'red']
+            # palette_couleurs = branca.colormap.LinearColormap(colors=couleurs_palette, index=index_palette, vmin=val_min, vmax=val_max)
+            palette_couleurs = branca.colormap.LinearColormap(colors=['blue', 'green', 'yellow', 'red'], vmin=val_min, vmax=val_max)
 
 
-    for i in range(len(data)):
-        point_color = 'blue' # Default color
-        fill_opacity = 0.7
-        if use_colormap:
-            current_value = data.iloc[i][value_col]
-            if min_val == max_val:
-                 normalized_value = 0.5 # or any fixed value
-            else:
-                normalized_value = (current_value - min_val) / (max_val - min_val)
-            point_color = colormap(current_value)
+    for i in range(len(donnees)):
+        couleur_point = 'blue' # Couleur par défaut
+        opacite_remplissage = 0.6
+        rayon_cercle = 50 # Peut aussi être basé sur les données
 
+        if utiliser_palette:
+            valeur_actuelle = donnees.iloc[i][col_valeur]
+            couleur_point = palette_couleurs(valeur_actuelle)
 
         folium.Circle(
-            location=[data.iloc[i][lat_col], data.iloc[i][lon_col]],
-            radius=50, # Adjust radius as needed, can also be data-driven
-            color=point_color,
+            location=[donnees.iloc[i][col_latitude], donnees.iloc[i][col_longitude]],
+            radius=rayon_cercle,
+            color=couleur_point,
             fill=True,
-            fill_color=point_colorm,
-            fill_opacity=fill_opacity
+            fill_color=couleur_point, # Utiliser la même couleur pour le remplissage
+            fill_opacity=opacite_remplissage,
+            tooltip=f"{col_valeur}: {donnees.iloc[i].get(col_valeur, 'N/A')}" # Afficher la valeur au survol
         ).add_to(m)
 
-    title_html = f'<h3 align="center" style="font-size:16px"><b>{data_split_name}</b></h3>'
-    m.get_root().html.add_child(folium.Element(title_html))
-    if use_colormap: # Add colormap legend only if used
-        m.add_child(colormap)
+    titre_html = f'<h3 align="center" style="font-size:16px"><b>{nom_split_donnees}</b></h3>'
+    m.get_root().html.add_child(folium.Element(titre_html))
+    if utiliser_palette: # Ajouter la légende de la palette de couleurs seulement si elle est utilisée
+        m.add_child(palette_couleurs)
     return m
 ```
 
+## class ModeleLineaireSimplePyTorch(nn.Module)
+Un modèle de régression linéaire simple (y = ax + b) utilisant `nn.Module` de PyTorch.
+Utilisé dans le TP2 pour une introduction à la définition de modèles PyTorch.
+
+**Entrées (pour `__init__`) :**
+- `dim_entree` (int) : Dimensionalité des caractéristiques d'entrée (typiquement 1 pour une régression linéaire simple).
+- `dim_sortie` (int) : Dimensionalité de la sortie (typiquement 1 pour une régression linéaire simple).
+
+**Entrées (pour `forward`) :**
+- `x` (torch.Tensor) : Le tenseur d'entrée.
+
+**Sorties (de `forward`) :**
+- (torch.Tensor) : Le tenseur de sortie (prédictions).
+
 ```python
-## class SimpleLinearModelPytorch(nn.Module)
-# A simple linear regression model (y = ax + b) using PyTorch's nn.Module.
-# Used in TP2 for an introduction to PyTorch model definition.
-
-# Entrées (pour __init__) :
-# - input_dim (int): Dimensionality of the input features (typically 1 for simple linear regression).
-# - output_dim (int): Dimensionality of the output (typically 1 for simple linear regression).
-
-# Entrées (pour forward) :
-# - x (torch.Tensor): The input tensor.
-
-# Sorties (de forward) :
-# - (torch.Tensor): The output tensor (predictions).
-import torch
-import torch.nn as nn
-
-class SimpleLinearModelPytorch(nn.Module):
+class ModeleLineaireSimplePyTorch(nn.Module):
     """
-    A simple linear regression model (y = ax + b) using PyTorch.
-    input_dim: number of input features (e.g., 1 for X)
-    output_dim: number of output values (e.g., 1 for Y)
+    Un modèle de régression linéaire simple (y = ax + b) utilisant PyTorch.
+    dim_entree: nombre de caractéristiques d'entrée (ex: 1 pour X)
+    dim_sortie: nombre de valeurs de sortie (ex: 1 pour Y)
     """
-    def __init__(self, input_dim: int = 1, output_dim: int = 1):
-        super(SimpleLinearModelPytorch, self).__init__()
-        self.linear = nn.Linear(input_dim, output_dim)
+    def __init__(self, dim_entree: int = 1, dim_sortie: int = 1):
+        super(ModeleLineaireSimplePyTorch, self).__init__()
+        self.linear = nn.Linear(dim_entree, dim_sortie)
 
     def forward(self, x: torch.Tensor) -> torch.Tensor:
         return self.linear(x)
 ```
 
+## def entrainer_modele_lineaire_simple_pytorch(modele: nn.Module, critere: nn.Module, optimiseur: optim.Optimizer, X_tenseur: torch.Tensor, Y_tenseur: torch.Tensor, nb_epochs: int = 100, afficher_chaque: int = 10, tracer_chaque: int = 0)
+Entraîne un modèle PyTorch simple (comme `ModeleLineaireSimplePyTorch`).
+Gère la boucle d'entraînement : passe avant, calcul de la perte, passe arrière, mise à jour de l'optimiseur.
+Utilisé dans le TP2.
+
+**Entrées :**
+- `modele` (nn.Module) : Le modèle PyTorch à entraîner.
+- `critere` (nn.Module) : La fonction de perte (ex: `nn.MSELoss()`).
+- `optimiseur` (optim.Optimizer) : L'optimiseur (ex: `torch.optim.SGD(...)`).
+- `X_tenseur` (torch.Tensor) : Le tenseur de données d'entrée.
+- `Y_tenseur` (torch.Tensor) : Le tenseur de données cibles.
+- `nb_epochs` (int, optionnel) : Nombre d'époques d'entraînement. Par défaut 100.
+- `afficher_chaque` (int, optionnel) : Fréquence d'affichage de la perte (ex: toutes les 10 époques). Si 0, pas d'affichage.
+- `tracer_chaque` (int, optionnel) : Fréquence de traçage des prédictions vs original. Si 0, pas de traçage pendant l'entraînement.
+
+**Sorties :**
+- `pertes` (list) : Une liste des valeurs de perte, une pour chaque époque.
+- Affiche les informations de perte et des graphiques optionnels pendant l'entraînement.
+
 ```python
-## def train_simple_linear_model_pytorch(model: nn.Module, criterion: nn.Module, optimizer: optim.Optimizer, X_tensor: torch.Tensor, Y_tensor: torch.Tensor, epochs: int = 100, print_every: int = 10, plot_every: int = 0)
-# Trains a simple PyTorch model (like SimpleLinearModelPytorch).
-# Handles the training loop: forward pass, loss calculation, backward pass, optimizer step.
-# Used in TP2.
-
-# Entrées :
-# - model (nn.Module): The PyTorch model to train.
-# - criterion (nn.Module): The loss function (e.g., nn.MSELoss()).
-# - optimizer (optim.Optimizer): The optimizer (e.g., torch.optim.SGD(...)).
-# - X_tensor (torch.Tensor): The input data tensor.
-# - Y_tensor (torch.Tensor): The target data tensor.
-# - epochs (int, optional): Number of training epochs. Defaults to 100.
-# - print_every (int, optional): Frequency of printing loss (e.g., every 10 epochs). If 0, no printing.
-# - plot_every (int, optional): Frequency of plotting predictions vs original. If 0, no plotting during training.
-
-# Sorties :
-# - losses (list): A list of loss values, one for each epoch.
-# - Displays loss information and optional plots during training.
-import torch
-import torch.nn as nn
-import torch.optim as optim
-import matplotlib.pyplot as plt
-import numpy as np
-
-def train_simple_linear_model_pytorch(model: nn.Module, criterion: nn.Module, optimizer: optim.Optimizer, X_tensor: torch.Tensor, Y_tensor: torch.Tensor, epochs: int = 100, print_every: int = 10, plot_every: int = 0) -> list:
+def entrainer_modele_lineaire_simple_pytorch(modele: nn.Module, critere: nn.Module, optimiseur: optim.Optimizer, X_tenseur: torch.Tensor, Y_tenseur: torch.Tensor, nb_epochs: int = 100, afficher_chaque: int = 10, tracer_chaque: int = 0) -> list:
     """
-    Trains a simple PyTorch model.
-    `plot_every > 0` will plot predictions assuming X_tensor and Y_tensor are 1D for scatter plot.
+    Entraîne un modèle PyTorch simple.
+    `tracer_chaque > 0` tracera les prédictions en supposant que X_tenseur et Y_tenseur sont 1D pour le nuage de points.
     """
-    losses = []
+    pertes = []
     
-    # Ensure X_tensor and Y_tensor are float tensors
-    if not isinstance(X_tensor, torch.FloatTensor):
-        X_tensor = X_tensor.float()
-    if not isinstance(Y_tensor, torch.FloatTensor):
-        Y_tensor = Y_tensor.float()
+    # S'assurer que X_tenseur et Y_tenseur sont des tenseurs float
+    if not isinstance(X_tenseur, torch.FloatTensor):
+        X_tenseur = X_tenseur.float()
+    if not isinstance(Y_tenseur, torch.FloatTensor):
+        Y_tenseur = Y_tenseur.float()
 
-    # Reshape if they are 1D for nn.Linear compatibility
-    if X_tensor.ndim == 1:
-        X_tensor = X_tensor.view(-1, 1)
-    if Y_tensor.ndim == 1:
-        Y_tensor = Y_tensor.view(-1, 1)
+    # Redimensionner s'ils sont 1D pour la compatibilité avec nn.Linear
+    if X_tenseur.ndim == 1:
+        X_tenseur = X_tenseur.view(-1, 1)
+    if Y_tenseur.ndim == 1:
+        Y_tenseur = Y_tenseur.view(-1, 1)
 
-    for epoch in range(epochs):
-        # 1. Reset gradients
-        optimizer.zero_grad()
+    for epoch in range(nb_epochs):
+        # 1. Réinitialiser les gradients
+        optimiseur.zero_grad()
 
-        # 2. Forward pass
-        predictions = model(X_tensor)
+        # 2. Passe avant
+        predictions = modele(X_tenseur)
 
-        # 3. Calculate loss
-        loss = criterion(predictions, Y_tensor)
-        losses.append(loss.item())
+        # 3. Calculer la perte
+        perte = critere(predictions, Y_tenseur)
+        pertes.append(perte.item())
 
-        # 4. Backward pass
-        loss.backward()
+        # 4. Passe arrière
+        perte.backward()
 
-        # 5. Update weights
-        optimizer.step()
+        # 5. Mettre à jour les poids
+        optimiseur.step()
 
-        if print_every > 0 and (epoch + 1) % print_every == 0:
-            print(f"Epoch {epoch + 1}/{epochs}, Loss: {loss.item():.4f}")
+        if afficher_chaque > 0 and (epoch + 1) % afficher_chaque == 0:
+            print(f"Époque {epoch + 1}/{nb_epochs}, Perte : {perte.item():.4f}")
 
-        if plot_every > 0 and (epoch + 1) % plot_every == 0 :
+        if tracer_chaque > 0 and (epoch + 1) % tracer_chaque == 0 :
             plt.figure(figsize=(6, 4))
-            # Detach tensors and convert to numpy for plotting
-            # Assuming X_tensor was originally 1D for this specific plot
-            original_X_for_plot = X_tensor.view(-1).detach().cpu().numpy()
-            original_Y_for_plot = Y_tensor.view(-1).detach().cpu().numpy()
-            predicted_Y_for_plot = predictions.view(-1).detach().cpu().numpy()
+            # Détacher les tenseurs et convertir en numpy pour le traçage
+            # En supposant que X_tenseur était initialement 1D pour ce graphique spécifique
+            X_original_pour_graph = X_tenseur.view(-1).detach().cpu().numpy()
+            Y_original_pour_graph = Y_tenseur.view(-1).detach().cpu().numpy()
+            Y_predit_pour_graph = predictions.view(-1).detach().cpu().numpy()
 
-            plt.scatter(original_X_for_plot, original_Y_for_plot, color='blue', label='Original Data', s=10)
-            plt.scatter(original_X_for_plot, predicted_Y_for_plot, color='red', label='Predictions', s=10, alpha=0.6)
-            plt.plot(original_X_for_plot, predicted_Y_for_plot, color='red', linestyle='--', alpha=0.5) # Line for trend
+            plt.scatter(X_original_pour_graph, Y_original_pour_graph, color='blue', label='Données Originales', s=10)
+            plt.scatter(X_original_pour_graph, Y_predit_pour_graph, color='red', label='Prédictions', s=10, alpha=0.6)
+            # plt.plot(X_original_pour_graph, Y_predit_pour_graph, color='red', linestyle='--', alpha=0.5) # Ligne de tendance
+            # Pour tracer la ligne apprise, il faut trier X si ce n'est pas déjà le cas
+            indices_tries = np.argsort(X_original_pour_graph)
+            plt.plot(X_original_pour_graph[indices_tries], Y_predit_pour_graph[indices_tries], color='red', linestyle='-', alpha=0.7, label='Ligne Apprise')
+
+
             plt.xlabel('X')
             plt.ylabel('Y')
-            plt.title(f'Epoch {epoch+1} Predictions')
+            plt.title(f'Époque {epoch+1} Prédictions')
             plt.legend()
             plt.show()
             
-    return losses
+    return pertes
 ```
 
+## def mettre_a_echelle_donnees_minmax(X_train: pd.DataFrame, y_train: pd.Series, X_test: pd.DataFrame = None, y_test: pd.Series = None, X_val: pd.DataFrame = None, y_val: pd.Series = None)
+Met à l'échelle les caractéristiques (X) et la cible (y) en utilisant `MinMaxScaler`.
+Ajuste le scaler sur les données d'entraînement et transforme les ensembles d'entraînement, de validation et de test.
+La variable cible `y` est redimensionnée en 2D avant la mise à l'échelle, car `MinMaxScaler` attend une entrée 2D.
+Utilisé dans le TP2 pour les données de logement et adapté dans le TP3 (comme `normalize_data`).
+
+**Entrées :**
+- `X_train` (pd.DataFrame) : Caractéristiques d'entraînement.
+- `y_train` (pd.Series) : Cible d'entraînement.
+- `X_test` (pd.DataFrame, optionnel) : Caractéristiques de test.
+- `y_test` (pd.Series, optionnel) : Cible de test.
+- `X_val` (pd.DataFrame, optionnel) : Caractéristiques de validation.
+- `y_val` (pd.Series, optionnel) : Cible de validation.
+
+**Sorties :**
+- `tuple` : Contient les données mises à l'échelle (X_train_scaled, y_train_scaled, ...),
+et les scalers ajustés (scaler_X, scaler_y).
+Ordre : X_train_s, y_train_s, X_val_s, y_val_s, X_test_s, y_test_s, scaler_X, scaler_y.
+Si les données de validation/test ne sont pas fournies, les sorties correspondantes seront `None`.
+
 ```python
-## def scale_data_minmax(X_train: pd.DataFrame, y_train: pd.Series, X_test: pd.DataFrame = None, y_test: pd.Series = None, X_val: pd.DataFrame = None, y_val: pd.Series = None)
-# Scales features (X) and target (y) using MinMaxScaler.
-# Fits scaler on training data and transforms train, validation, and test sets.
-# Target variable `y` is reshaped to 2D before scaling, as MinMaxScaler expects 2D input.
-# Used in TP2 for housing data and TP3 (adapted as normalize_data).
-
-# Entrées :
-# - X_train (pd.DataFrame): Training features.
-# - y_train (pd.Series): Training target.
-# - X_test (pd.DataFrame, optional): Test features.
-# - y_test (pd.Series, optional): Test target.
-# - X_val (pd.DataFrame, optional): Validation features.
-# - y_val (pd.Series, optional): Validation target.
-
-# Sorties :
-# - tuple: Contains scaled data (X_train_scaled, y_train_scaled, ...),
-#          and the fitted scalers (scaler_X, scaler_y).
-#          Order: X_train_s, y_train_s, X_val_s, y_val_s, X_test_s, y_test_s, scaler_X, scaler_y
-#          If val/test data are not provided, corresponding outputs will be None.
-from sklearn.preprocessing import MinMaxScaler
-import pandas as pd
-import numpy as np
-
-def scale_data_minmax(X_train: pd.DataFrame, y_train: pd.Series, 
-                      X_test: pd.DataFrame = None, y_test: pd.Series = None, 
-                      X_val: pd.DataFrame = None, y_val: pd.Series = None):
+def mettre_a_echelle_donnees_minmax(X_train: pd.DataFrame, y_train: pd.Series, 
+                                   X_test: pd.DataFrame = None, y_test: pd.Series = None, 
+                                   X_val: pd.DataFrame = None, y_val: pd.Series = None):
     """
-    Scales features (X) and target (y) using MinMaxScaler.
-    Fits on training data and transforms train, val, and test sets.
-    y is reshaped to 2D for scaler compatibility.
-    Returns scaled data and fitted scalers.
+    Met à l'échelle les caractéristiques (X) et la cible (y) en utilisant MinMaxScaler.
+    S'ajuste sur les données d'entraînement et transforme les ensembles d'entraînement, de validation et de test.
+    y est redimensionné en 2D pour la compatibilité avec le scaler.
+    Retourne les données mises à l'échelle et les scalers ajustés.
     """
     scaler_X = MinMaxScaler()
     scaler_y = MinMaxScaler()
 
-    # Scale features
-    X_train_scaled = scaler_X.fit_transform(X_train)
-    X_val_scaled = scaler_X.transform(X_val) if X_val is not None else None
-    X_test_scaled = scaler_X.transform(X_test) if X_test is not None else None
+    # Mettre à l'échelle les caractéristiques
+    X_train_scaled_np = scaler_X.fit_transform(X_train)
+    X_val_scaled_np = scaler_X.transform(X_val) if X_val is not None else None
+    X_test_scaled_np = scaler_X.transform(X_test) if X_test is not None else None
 
-    # Reshape y to 2D array as MinMaxScaler expects 2D input
+    # Redimensionner y en tableau 2D car MinMaxScaler attend une entrée 2D
     y_train_reshaped = y_train.values.reshape(-1, 1)
     y_train_scaled = scaler_y.fit_transform(y_train_reshaped)
 
@@ -647,2396 +652,2323 @@ def scale_data_minmax(X_train: pd.DataFrame, y_train: pd.Series,
         y_test_reshaped = y_test.values.reshape(-1, 1)
         y_test_scaled = scaler_y.transform(y_test_reshaped)
 
-    # Convert scaled X back to DataFrames if original were DataFrames
-    X_train_scaled = pd.DataFrame(X_train_scaled, columns=X_train.columns, index=X_train.index)
-    if X_val is not None:
-        X_val_scaled = pd.DataFrame(X_val_scaled, columns=X_val.columns, index=X_val.index)
-    if X_test is not None:
-        X_test_scaled = pd.DataFrame(X_test_scaled, columns=X_test.columns, index=X_test.index)
+    # Reconvertir X mis à l'échelle en DataFrames si les originaux étaient des DataFrames, en conservant les colonnes et l'index
+    X_train_scaled_df = pd.DataFrame(X_train_scaled_np, columns=X_train.columns, index=X_train.index)
+    X_val_scaled_df = pd.DataFrame(X_val_scaled_np, columns=X_val.columns, index=X_val.index) if X_val is not None else None
+    X_test_scaled_df = pd.DataFrame(X_test_scaled_np, columns=X_test.columns, index=X_test.index) if X_test is not None else None
         
-    # y_scaled are numpy arrays, which is typical for model input/output
+    # y_scaled sont des tableaux numpy, ce qui est typique pour l'entrée/sortie du modèle
 
-    return X_train_scaled, y_train_scaled, X_val_scaled, y_val_scaled, X_test_scaled, y_test_scaled, scaler_X, scaler_y
+    return X_train_scaled_df, y_train_scaled, X_val_scaled_df, y_val_scaled, X_test_scaled_df, y_test_scaled, scaler_X, scaler_y
 ```
 
+## def calculer_metriques_regression(y_vrai_echelle: np.ndarray, y_pred_echelle: np.ndarray, scaler_y: MinMaxScaler, epsilon: float = 1e-7)
+Calcule les scores MAE, MAPE et R2 pour les tâches de régression.
+Important : elle transforme d'abord inversement les valeurs vraies et prédites mises à l'échelle
+en utilisant le `scaler_y` fourni avant de calculer les métriques, afin que les métriques soient dans l'échelle d'origine.
+Utilisé dans le TP2.
+
+**Entrées :**
+- `y_vrai_echelle` (np.ndarray) : Valeurs cibles vraies mises à l'échelle (typiquement 2D, ex: issues de `MinMaxScaler`).
+- `y_pred_echelle` (np.ndarray) : Valeurs cibles prédites mises à l'échelle (typiquement 2D).
+- `scaler_y` (MinMaxScaler) : L'objet scaler qui a été utilisé pour mettre à l'échelle `y_vrai_echelle`.
+- `epsilon` (float, optionnel) : Petite valeur à ajouter au dénominateur pour MAPE afin d'éviter la division par zéro.
+
+**Sorties :**
+- `dict` : Un dictionnaire contenant 'mae', 'mape', et 'r2'.
+
 ```python
-## def calculate_regression_metrics(y_true_scaled: np.ndarray, y_pred_scaled: np.ndarray, y_scaler: MinMaxScaler, epsilon: float = 1e-7)
-# Calculates MAE, MAPE, and R2 score for regression tasks.
-# Importantly, it first inverse-transforms the scaled true and predicted values
-# using the provided y_scaler before calculating metrics, so metrics are in original scale.
-# Used in TP2.
-
-# Entrées :
-# - y_true_scaled (np.ndarray): Scaled true target values (typically 2D, e.g., from MinMaxScaler).
-# - y_pred_scaled (np.ndarray): Scaled predicted target values (typically 2D).
-# - y_scaler (MinMaxScaler): The scaler object that was used to scale `y_true_scaled` (and `y_pred_scaled` implicitly).
-# - epsilon (float, optional): Small value to add to denominator for MAPE to avoid division by zero.
-
-# Sorties :
-# - dict: A dictionary containing 'mae', 'mape', and 'r2'.
-from sklearn.metrics import mean_absolute_error, r2_score
-from sklearn.preprocessing import MinMaxScaler
-import numpy as np
-
-def calculate_regression_metrics(y_true_scaled: np.ndarray, y_pred_scaled: np.ndarray, y_scaler: MinMaxScaler, epsilon: float = 1e-7) -> dict:
+def calculer_metriques_regression(y_vrai_echelle: np.ndarray, y_pred_echelle: np.ndarray, scaler_y: MinMaxScaler, epsilon: float = 1e-7) -> dict:
     """
-    Calculates MAE, MAPE, and R2 score after inverse-transforming scaled predictions.
-    Assumes y_true_scaled and y_pred_scaled are 2D numpy arrays (output of MinMaxScaler).
+    Calcule MAE, MAPE et R2 après transformation inverse des prédictions mises à l'échelle.
+    Suppose que y_vrai_echelle et y_pred_echelle sont des tableaux numpy 2D (sortie de MinMaxScaler).
     """
-    # Ensure inputs are numpy arrays and reshape if they are 1D (e.g. Series.values)
-    y_true_s = np.asarray(y_true_scaled)
-    y_pred_s = np.asarray(y_pred_scaled)
+    # S'assurer que les entrées sont des tableaux numpy et redimensionner si elles sont 1D
+    y_vrai_s = np.asarray(y_vrai_echelle)
+    y_pred_s = np.asarray(y_pred_echelle)
 
-    if y_true_s.ndim == 1:
-        y_true_s = y_true_s.reshape(-1, 1)
+    if y_vrai_s.ndim == 1:
+        y_vrai_s = y_vrai_s.reshape(-1, 1)
     if y_pred_s.ndim == 1:
         y_pred_s = y_pred_s.reshape(-1, 1)
 
-    # Inverse transform to original scale
-    y_true_unscaled = y_scaler.inverse_transform(y_true_s)
-    y_pred_unscaled = y_scaler.inverse_transform(y_pred_s)
+    # Transformation inverse à l'échelle d'origine
+    y_vrai_original = scaler_y.inverse_transform(y_vrai_s)
+    y_pred_original = scaler_y.inverse_transform(y_pred_s)
 
-    # Calculate MAE
-    mae = mean_absolute_error(y_true_unscaled, y_pred_unscaled)
+    # Calculer MAE
+    mae = mean_absolute_error(y_vrai_original, y_pred_original)
 
-    # Calculate MAPE
-    # Ensure y_true_unscaled is not zero for division
-    # Use np.maximum to avoid division by zero or very small numbers
-    diff = np.abs(y_true_unscaled - y_pred_unscaled)
-    denominator = np.maximum(np.abs(y_true_unscaled), epsilon) 
-    mape = np.mean(diff / denominator) * 100 # As percentage
+    # Calculer MAPE
+    diff = np.abs(y_vrai_original - y_pred_original)
+    denominateur = np.maximum(np.abs(y_vrai_original), epsilon) 
+    mape = np.mean(diff / denominateur) * 100 # En pourcentage
 
-    # Calculate R2 Score
-    r2 = r2_score(y_true_unscaled, y_pred_unscaled)
+    # Calculer R2 Score
+    r2 = r2_score(y_vrai_original, y_pred_original)
 
     return {"mae": mae, "mape": mape, "r2": r2}
 ```
 
+## def visualiser_predictions_regression(y_vrai_original: pd.Series, y_pred_original: np.ndarray, nb_echantillons_a_tracer: int = 100, titre: str = "Prédictions vs Valeurs Réelles", label_x: str = "Index Maison", label_y: str = "Valeur Maison")
+Trace les valeurs vraies vs. prédites pour un modèle de régression.
+Suppose que les entrées sont déjà dans leur forme originale, non mise à l'échelle.
+Utilisé dans le TP2.
+
+**Entrées :**
+- `y_vrai_original` (pd.Series ou np.ndarray) : Valeurs cibles vraies à l'échelle d'origine.
+- `y_pred_original` (np.ndarray) : Valeurs cibles prédites à l'échelle d'origine.
+- `nb_echantillons_a_tracer` (int, optionnel) : Nombre d'échantillons initiaux à tracer. Par défaut 100.
+- `titre` (str, optionnel) : Titre du graphique.
+- `label_x` (str, optionnel) : Étiquette pour l'axe des x.
+- `label_y` (str, optionnel) : Étiquette pour l'axe des y.
+
+**Sorties :**
+- Aucune (affiche le graphique).
+
 ```python
-## def plot_regression_predictions(y_true_original_scale: pd.Series, y_pred_original_scale: np.ndarray, num_samples_to_plot: int = 100, title: str = "Predictions vs Real Values", xlabel: str = "House Index", ylabel: str = "House Value")
-# Plots true vs. predicted values for a regression model.
-# Assumes inputs are already in their original, unscaled form.
-# Used in TP2.
-
-# Entrées :
-# - y_true_original_scale (pd.Series or np.ndarray): True target values in original scale.
-# - y_pred_original_scale (np.ndarray): Predicted target values in original scale.
-# - num_samples_to_plot (int, optional): Number of initial samples to plot. Defaults to 100.
-# - title (str, optional): Title of the plot.
-# - xlabel (str, optional): Label for the x-axis.
-# - ylabel (str, optional): Label for the y-axis.
-
-# Sorties :
-# - None (displays the plot).
-import pandas as pd
-import numpy as np
-import matplotlib.pyplot as plt
-import seaborn as sns
-
-def plot_regression_predictions(y_true_original_scale: pd.Series, y_pred_original_scale: np.ndarray, num_samples_to_plot: int = 100, title: str = "Predictions vs Real Values", xlabel: str = "House Index", ylabel: str = "House Value"):
+def visualiser_predictions_regression(y_vrai_original: pd.Series, y_pred_original: np.ndarray, nb_echantillons_a_tracer: int = 100, titre: str = "Prédictions vs Valeurs Réelles", label_x: str = "Index Maison", label_y: str = "Valeur Maison"):
     """
-    Plots true vs. predicted values for a regression model.
-    Inputs y_true and y_pred should be in their original (unscaled) form.
-    y_true_original_scale can be a Pandas Series or a 1D NumPy array.
-    y_pred_original_scale should be a 1D NumPy array.
+    Trace les valeurs vraies vs. prédites pour un modèle de régression.
+    Les entrées y_vrai et y_pred doivent être dans leur forme originale (non mise à l'échelle).
+    y_vrai_original peut être une Série Pandas ou un tableau NumPy 1D.
+    y_pred_original doit être un tableau NumPy 1D.
     """
-    if isinstance(y_true_original_scale, pd.Series):
-        y_true_plot = y_true_original_scale.values[:num_samples_to_plot]
+    if isinstance(y_vrai_original, pd.Series):
+        y_vrai_pour_graph = y_vrai_original.values[:nb_echantillons_a_tracer]
     else:
-        y_true_plot = np.asarray(y_true_original_scale)[:num_samples_to_plot]
+        y_vrai_pour_graph = np.asarray(y_vrai_original)[:nb_echantillons_a_tracer]
         
-    y_pred_plot = np.asarray(y_pred_original_scale).flatten()[:num_samples_to_plot] # Ensure 1D
+    y_pred_pour_graph = np.asarray(y_pred_original).flatten()[:nb_echantillons_a_tracer] # S'assurer qu'il est 1D
 
-    result_df = pd.DataFrame({
-        'Index': list(range(min(len(y_true_plot), len(y_pred_plot)))), # Ensure index matches shortest array
-        'Real Values': y_true_plot,
-        'Predictions': y_pred_plot
+    # S'assurer que les longueurs correspondent pour la création du DataFrame
+    nb_echantillons_reel = min(len(y_vrai_pour_graph), len(y_pred_pour_graph))
+
+    df_resultat = pd.DataFrame({
+        'Index': list(range(nb_echantillons_reel)),
+        'Valeurs Réelles': y_vrai_pour_graph[:nb_echantillons_reel],
+        'Prédictions': y_pred_pour_graph[:nb_echantillons_reel]
     })
 
     plt.figure(figsize=(15, 7))
-    sns.lineplot(data=result_df, x='Index', y='Real Values', marker='o', label='Real Values', linestyle='-')
-    sns.lineplot(data=result_df, x='Index', y='Predictions', marker='x', label='Predictions', linestyle='--')
+    sns.lineplot(data=df_resultat, x='Index', y='Valeurs Réelles', marker='o', label='Valeurs Réelles', linestyle='-')
+    sns.lineplot(data=df_resultat, x='Index', y='Prédictions', marker='x', label='Prédictions', linestyle='--')
 
-    plt.title(title)
-    plt.xlabel(xlabel)
-    plt.ylabel(ylabel)
+    plt.title(titre)
+    plt.xlabel(label_x)
+    plt.ylabel(label_y)
     plt.legend()
     plt.grid(True)
     plt.show()
 ```
 
+## def pretraiter_donnees_housing_kc(dataframe_housing: pd.DataFrame) -> tuple[pd.DataFrame, pd.Series]
+Prétraite les caractéristiques et extrait la cible pour un autre jeu de données de logements (KC Housing Data - TP3).
+Crée une caractéristique 'age' à partir de 'sales_yr' (dérivée de 'date') et 'yr_built'.
+Sélectionne une liste spécifique de caractéristiques.
+
+**Entrées :**
+- `dataframe_housing` (pd.DataFrame) : Le DataFrame d'entrée (ex: kc_house_data.csv).
+  Colonnes attendues : 'date', 'yr_built', et autres caractéristiques listées dans `selected_features`.
+  Colonne cible : 'price'.
+
+**Sorties :**
+- `X` (pd.DataFrame) : DataFrame avec les caractéristiques sélectionnées et créées.
+- `Y` (pd.Series) : Série contenant la cible 'price'.
+
 ```python
-## def preprocess_housing_features_v2_age(housing_dataframe: pd.DataFrame) -> tuple[pd.DataFrame, pd.Series]
-# Preprocesses features and extracts target for a different housing dataset (KC Housing Data - TP3).
-# Creates an 'age' feature from 'sales_yr' (derived from 'date') and 'yr_built'.
-# Selects a specific list of features.
-
-# Entrées :
-# - housing_dataframe (pd.DataFrame): The input DataFrame (e.g., kc_house_data.csv).
-#   Expected columns: 'date', 'yr_built', and other features listed in `selected_features`.
-#   Target column: 'price'.
-
-# Sorties :
-# - X (pd.DataFrame): DataFrame with selected and engineered features.
-# - Y (pd.Series): Series containing the target 'price'.
-import pandas as pd
-
-def preprocess_housing_features_v2_age(housing_dataframe: pd.DataFrame) -> tuple[pd.DataFrame, pd.Series]:
+def pretraiter_donnees_housing_kc(dataframe_housing: pd.DataFrame) -> tuple[pd.DataFrame, pd.Series]:
     """
-    Preprocesses features for the KC housing dataset (TP3).
-    Adds 'age' column, selects features, and separates target 'price'.
+    Prétraite les caractéristiques pour le jeu de données KC housing (TP3).
+    Ajoute la colonne 'age', sélectionne les caractéristiques et sépare la cible 'price'.
     """
-    housing_copy = housing_dataframe.copy()
+    copie_housing = dataframe_housing.copy()
     
-    # Ensure 'date' column is in datetime format
-    if 'date' in housing_copy.columns:
-        housing_copy['sales_yr'] = pd.to_datetime(housing_copy['date']).dt.year
-        # Add the age of the buildings when the houses were sold as a new column
-        if 'yr_built' in housing_copy.columns:
-            housing_copy['age'] = housing_copy['sales_yr'] - housing_copy['yr_built']
-        else:
-            raise KeyError("'yr_built' column not found, cannot calculate 'age'.")
-    else:
-        # If 'date' is not present, 'age' cannot be calculated this way.
-        # Depending on requirements, either raise error or skip 'age' calculation.
-        # For now, we assume 'age' might be pre-calculated or comes from elsewhere if 'date' is missing.
-        if 'age' not in housing_copy.columns:
-            print("Warning: 'date' column not found and 'age' not pre-existing. 'age' feature will be missing.")
-            # housing_copy['age'] = 0 # Or some default if absolutely needed by selected_features
+    # S'assurer que la colonne 'date' est au format datetime
+    if 'date' in copie_housing.columns:
+        try: # Gérer les erreurs de conversion de date potentielles
+            copie_housing['sales_yr'] = pd.to_datetime(copie_housing['date']).dt.year
+        except Exception as e:
+            print(f"Erreur lors de la conversion de la colonne 'date': {e}. 'sales_yr' et 'age' ne seront pas créées.")
+            copie_housing['sales_yr'] = None # ou une autre valeur par défaut / gestion d'erreur
 
-    selected_features_list = [
+        # Ajouter l'âge des bâtiments lors de la vente comme nouvelle colonne
+        if 'yr_built' in copie_housing.columns and copie_housing['sales_yr'] is not None :
+            copie_housing['age'] = copie_housing['sales_yr'] - copie_housing['yr_built']
+        elif 'yr_built' not in copie_housing.columns:
+            print("Avertissement : Colonne 'yr_built' introuvable, 'age' ne peut pas être calculé.")
+        # Si sales_yr est None, age ne sera pas calculé correctement non plus
+    else:
+        if 'age' not in copie_housing.columns: # Si 'age' n'est pas déjà là
+            print("Avertissement : Colonne 'date' introuvable et 'age' non préexistante. La caractéristique 'age' sera manquante.")
+
+    # Liste des caractéristiques à sélectionner
+    liste_caracteristiques_selectionnees = [
         'bedrooms', 'bathrooms', 'sqft_living', 'sqft_lot', 'floors', 
         'waterfront', 'view', 'condition', 'grade', 'sqft_above', 
         'sqft_basement', 'yr_built', 'yr_renovated', 'zipcode', 'lat', 
         'long', 'sqft_living15', 'sqft_lot15'
     ]
-    if 'age' in housing_copy.columns: # Only add 'age' if it was successfully created
-        selected_features_list.append('age')
+    # Ajouter 'age' seulement si elle a été créée avec succès
+    if 'age' in copie_housing.columns and pd.api.types.is_numeric_dtype(copie_housing['age']):
+        liste_caracteristiques_selectionnees.append('age')
 
-    # Filter selected_features_list to only include columns that exist in housing_copy
-    final_selected_features = [col for col in selected_features_list if col in housing_copy.columns]
+    # Filtrer la liste pour ne garder que les colonnes qui existent réellement dans copie_housing
+    caracteristiques_finales_selectionnees = [col for col in liste_caracteristiques_selectionnees if col in copie_housing.columns]
     
-    X = housing_copy[final_selected_features]
+    X = copie_housing[caracteristiques_finales_selectionnees]
     
-    if 'price' in housing_copy.columns:
-        Y = housing_copy['price']
+    if 'price' in copie_housing.columns:
+        Y = copie_housing['price']
     else:
-        raise KeyError("'price' column (target) not found in the DataFrame.")
+        raise KeyError("Colonne 'price' (cible) introuvable dans le DataFrame.")
         
     return X, Y
 ```
 
+## class DatasetTabulaire(Dataset)
+Une classe `Dataset` PyTorch pour les données tabulaires.
+Convertit des tranches de DataFrame/Série Pandas en tenseurs PyTorch.
+Utilisé dans le TP3.
+
+**Entrées (`__init__`) :**
+- `donnees` (np.ndarray ou pd.DataFrame) : Les données des caractéristiques.
+- `etiquettes` (np.ndarray ou pd.Series) : Les données des étiquettes.
+
+**Entrées (`__getitem__`) :**
+- `idx` (int) : Index de l'échantillon de données à récupérer.
+
+**Sorties (`__getitem__`) :**
+- `x` (torch.Tensor) : Tenseur des caractéristiques pour l'échantillon.
+- `y` (torch.Tensor) : Tenseur des étiquettes pour l'échantillon.
+
 ```python
-## class TabularDataset(Dataset)
-# A PyTorch Dataset class for tabular data.
-# Converts Pandas DataFrame/Series slices into PyTorch tensors.
-# Used in TP3.
-
-# Entrées (__init__) :
-# - data (np.ndarray or pd.DataFrame): The feature data.
-# - labels (np.ndarray or pd.Series): The label data.
-
-# Entrées (__getitem__) :
-# - idx (int): Index of the data sample to retrieve.
-
-# Sorties (__getitem__) :
-# - x (torch.Tensor): Tensor of features for the sample.
-# - y (torch.Tensor): Tensor of labels for the sample.
-import torch
-from torch.utils.data import Dataset
-import numpy as np
-import pandas as pd
-
-class TabularDataset(Dataset):
+class DatasetTabulaire(Dataset):
     """
-    PyTorch Dataset for tabular data.
-    Assumes data and labels are NumPy arrays or can be converted.
+    Dataset PyTorch pour données tabulaires.
+    Suppose que les données et étiquettes sont des tableaux NumPy ou peuvent être converties.
     """
-    def __init__(self, data, labels):
-        # Convert to numpy array if pandas DataFrame/Series
-        if isinstance(data, pd.DataFrame):
-            self.data = data.values.astype(np.float32)
+    def __init__(self, donnees, etiquettes):
+        # Convertir en tableau numpy si DataFrame/Série pandas
+        if isinstance(donnees, pd.DataFrame):
+            self.donnees = donnees.values.astype(np.float32)
         else:
-            self.data = np.asarray(data, dtype=np.float32)
+            self.donnees = np.asarray(donnees, dtype=np.float32)
             
-        if isinstance(labels, pd.Series):
-            self.labels = labels.values.astype(np.float32)
+        if isinstance(etiquettes, pd.Series):
+            self.etiquettes = etiquettes.values.astype(np.float32)
         else:
-            self.labels = np.asarray(labels, dtype=np.float32)
+            self.etiquettes = np.asarray(etiquettes, dtype=np.float32)
 
-        # Ensure labels are 2D if they are not already (e.g. for regression tasks with MSELoss)
-        if self.labels.ndim == 1:
-            self.labels = self.labels.reshape(-1, 1)
+        # S'assurer que les étiquettes sont 2D si elles ne le sont pas déjà (ex: pour les tâches de régression avec MSELoss)
+        if self.etiquettes.ndim == 1:
+            self.etiquettes = self.etiquettes.reshape(-1, 1)
 
     def __len__(self):
-        return len(self.data)
+        return len(self.donnees)
 
     def __getitem__(self, idx):
-        x = torch.tensor(self.data[idx], dtype=torch.float32)
-        y = torch.tensor(self.labels[idx], dtype=torch.float32) # y should also be float for most regression losses
+        x = torch.tensor(self.donnees[idx], dtype=torch.float32)
+        y = torch.tensor(self.etiquettes[idx], dtype=torch.float32) # y doit aussi être float pour la plupart des pertes de régression
         return x, y
 ```
 
+## def calculer_metriques_regression_pytorch(y_vrai_tenseur: torch.Tensor, y_pred_tenseur: torch.Tensor, scaler_y: MinMaxScaler) -> dict
+Calcule les scores MAE et R2 pour les tâches de régression en utilisant des tenseurs PyTorch.
+Convertit les tenseurs en tableaux NumPy et effectue une transformation inverse en utilisant `scaler_y` avant le calcul des métriques.
+Utilisé dans le TP3 (BaseModel).
+
+**Entrées :**
+- `y_vrai_tenseur` (torch.Tensor) : Valeurs cibles vraies (mises à l'échelle).
+- `y_pred_tenseur` (torch.Tensor) : Valeurs cibles prédites (mises à l'échelle).
+- `scaler_y` (MinMaxScaler) : L'objet scaler pour la transformation inverse.
+
+**Sorties :**
+- `dict` : Un dictionnaire contenant 'mae' et 'r2'.
+
 ```python
-## def calculate_regression_metrics_pytorch(y_true_tensor: torch.Tensor, y_pred_tensor: torch.Tensor, y_scaler: MinMaxScaler) -> dict
-# Calculates MAE and R2 score for regression tasks using PyTorch tensors.
-# Converts tensors to NumPy arrays and inverse-transforms using y_scaler before metric calculation.
-# Used in TP3 (BaseModel).
-
-# Entrées :
-# - y_true_tensor (torch.Tensor): True target values (scaled).
-# - y_pred_tensor (torch.Tensor): Predicted target values (scaled).
-# - y_scaler (MinMaxScaler): The scaler object for inverse transformation.
-
-# Sorties :
-# - dict: A dictionary containing 'mae' and 'r2'.
-import torch
-from sklearn.preprocessing import MinMaxScaler
-from sklearn.metrics import mean_absolute_error, r2_score
-import numpy as np
-
-def calculate_regression_metrics_pytorch(y_true_tensor: torch.Tensor, y_pred_tensor: torch.Tensor, y_scaler: MinMaxScaler) -> dict:
+def calculer_metriques_regression_pytorch(y_vrai_tenseur: torch.Tensor, y_pred_tenseur: torch.Tensor, scaler_y: MinMaxScaler) -> dict:
     """
-    Calculates MAE and R2 score from PyTorch tensors after inverse scaling.
+    Calcule MAE et R2 à partir de tenseurs PyTorch après mise à l'échelle inverse.
     """
-    # Detach tensors from graph, move to CPU, convert to NumPy
-    y_true_np = y_true_tensor.detach().cpu().numpy()
-    y_pred_np = y_pred_tensor.detach().cpu().numpy()
+    # Détacher les tenseurs du graphe, déplacer vers CPU, convertir en NumPy
+    y_vrai_np = y_vrai_tenseur.detach().cpu().numpy()
+    y_pred_np = y_pred_tenseur.detach().cpu().numpy()
 
-    # Reshape if they are not 2D (MinMaxScaler expects 2D)
-    if y_true_np.ndim == 1:
-        y_true_np = y_true_np.reshape(-1, 1)
+    # Redimensionner s'ils ne sont pas 2D (MinMaxScaler attend du 2D)
+    if y_vrai_np.ndim == 1:
+        y_vrai_np = y_vrai_np.reshape(-1, 1)
     if y_pred_np.ndim == 1:
         y_pred_np = y_pred_np.reshape(-1, 1)
 
-    # Inverse transform
-    y_true_unscaled = y_scaler.inverse_transform(y_true_np)
-    y_pred_unscaled = y_scaler.inverse_transform(y_pred_np)
+    # Transformation inverse
+    y_vrai_original = scaler_y.inverse_transform(y_vrai_np)
+    y_pred_original = scaler_y.inverse_transform(y_pred_np)
 
-    # Calculate metrics
-    mae = mean_absolute_error(y_true_unscaled, y_pred_unscaled)
-    r2 = r2_score(y_true_unscaled, y_pred_unscaled)
+    # Calculer les métriques
+    mae = mean_absolute_error(y_vrai_original, y_pred_original)
+    r2 = r2_score(y_vrai_original, y_pred_original)
 
     return {"mae": mae, "r2": r2}
 ```
 
+## class ModeleLightningBaseRegression(pl.LightningModule)
+Un module PyTorch Lightning de base pour les tâches de régression.
+Implémente `training_step`, `validation_step`, `test_step`, `predict_step`, et `configure_optimizers`.
+Enregistre les métriques MAE et R2 (calculées sur les données non mises à l'échelle).
+Utilisé dans le TP3.
+
+**Entrées (`__init__`) :**
+- `modele_pytorch` (nn.Module) : Le modèle de réseau de neurones PyTorch.
+- `fonction_perte` (nn.Module) : La fonction de perte (ex: `nn.MSELoss()`).
+- `scaler_y` (MinMaxScaler) : Scaler pour la variable cible, utilisé pour dénormaliser les métriques.
+- `taux_apprentissage` (float, optionnel) : Taux d'apprentissage pour l'optimiseur. Par défaut 6e-3.
+- `classe_optimiseur` (torch.optim.Optimizer, optionnel) : La classe d'optimiseur à utiliser. Par défaut `torch.optim.Adam`.
+
+**Sorties :**
+- (Implicitement, pendant l'entraînement/test) Enregistre les métriques dans le logger.
+
 ```python
-## class BaseLightningModel(pl.LightningModule)
-# A base PyTorch Lightning module for regression tasks.
-# Implements training_step, validation_step, test_step, predict_step, and configure_optimizers.
-# Logs MAE and R2 metrics.
-# Used in TP3.
-
-# Entrées (__init__) :
-# - model (nn.Module): The PyTorch neural network model.
-# - loss_fn (nn.Module): The loss function (e.g., nn.MSELoss()).
-# - y_scaler (MinMaxScaler): Scaler for the target variable, used for unscaling metrics.
-# - learning_rate (float, optional): Learning rate for the optimizer. Defaults to 6e-3.
-# - optimizer_class (torch.optim.Optimizer, optional): The optimizer class to use. Defaults to torch.optim.Adam.
-
-
-# Sorties :
-# - (Implicitly, during training/testing) Logs metrics to the logger.
-import pytorch_lightning as pl
-import torch
-import torch.nn as nn
-import torch.optim as optim
-from sklearn.preprocessing import MinMaxScaler
-# from sklearn.metrics import mean_absolute_error, r2_score # Already imported or use custom
-
-class BaseLightningModel(pl.LightningModule):
+class ModeleLightningBaseRegression(pl.LightningModule):
     """
-    Base PyTorch Lightning module for regression tasks.
-    Logs MAE and R2 metrics, using the provided y_scaler to report them in original scale.
+    Module PyTorch Lightning de base pour les tâches de régression.
+    Enregistre les métriques MAE et R2, en utilisant le scaler_y fourni pour les rapporter à l'échelle originale.
     """
-    def __init__(self, model: nn.Module, loss_fn: nn.Module, y_scaler: MinMaxScaler, learning_rate: float = 6e-3, optimizer_class = torch.optim.Adam):
+    def __init__(self, modele_pytorch: nn.Module, fonction_perte: nn.Module, scaler_y: MinMaxScaler, taux_apprentissage: float = 6e-3, classe_optimiseur = torch.optim.Adam):
         super().__init__()
-        self.model = model
-        self.loss_fn = loss_fn
-        self.y_scaler = y_scaler # For unscaling metrics
-        self.lr = learning_rate
-        self.optimizer_class = optimizer_class
-        # self.save_hyperparameters() # Can be useful for PTL checkpointing, excluding model, loss_fn, y_scaler if they are not simple types
+        self.modele_pytorch = modele_pytorch # Renommé pour éviter conflit avec self.model de PTL
+        self.fonction_perte = fonction_perte
+        self.scaler_y = scaler_y # Pour dénormaliser les métriques
+        self.lr = taux_apprentissage
+        self.classe_optimiseur = classe_optimiseur
+        self.save_hyperparameters(ignore=['modele_pytorch', 'fonction_perte', 'scaler_y'])
 
     def forward(self, x: torch.Tensor) -> torch.Tensor:
-        return self.model(x)
+        return self.modele_pytorch(x)
 
-    def _shared_step(self, batch, batch_idx, stage: str):
-        x, y_true_scaled = batch
-        y_pred_scaled = self(x)
-        loss = self.loss_fn(y_pred_scaled, y_true_scaled)
+    def _etape_partagee(self, batch, batch_idx, phase: str):
+        x, y_vrai_echelle = batch
+        y_pred_echelle = self(x)
+        perte = self.fonction_perte(y_pred_echelle, y_vrai_echelle)
         
-        # Calculate metrics on unscaled data
-        metrics_unscaled = calculate_regression_metrics_pytorch(y_true_scaled, y_pred_scaled, self.y_scaler)
+        # Calculer les métriques sur les données non mises à l'échelle
+        metriques_original_scale = calculer_metriques_regression_pytorch(y_vrai_echelle, y_pred_echelle, self.scaler_y)
         
-        log_dict = {
-            f"{stage}_loss": loss,
-            f"{stage}_mae_unscaled": metrics_unscaled["mae"],
-            f"{stage}_r2_unscaled": metrics_unscaled["r2"]
+        dict_logs = {
+            f"{phase}_perte": perte,
+            f"{phase}_mae_original": metriques_original_scale["mae"],
+            f"{phase}_r2_original": metriques_original_scale["r2"]
         }
-        # prog_bar=True makes them appear in the progress bar
-        self.log_dict(log_dict, on_step=(stage=="train"), on_epoch=True, prog_bar=True, logger=True)
-        return loss
+        # prog_bar=True pour les afficher dans la barre de progression
+        self.log_dict(dict_logs, on_step=(phase=="train"), on_epoch=True, prog_bar=True, logger=True)
+        return perte
 
     def training_step(self, batch, batch_idx):
-        return self._shared_step(batch, batch_idx, "train")
+        return self._etape_partagee(batch, batch_idx, "train")
 
     def validation_step(self, batch, batch_idx):
-        return self._shared_step(batch, batch_idx, "val")
+        return self._etape_partagee(batch, batch_idx, "val")
 
     def test_step(self, batch, batch_idx):
-        return self._shared_step(batch, batch_idx, "test")
+        return self._etape_partagee(batch, batch_idx, "test")
 
     def predict_step(self, batch, batch_idx, dataloader_idx=0):
-        # Batch might be just x, or (x, y)
+        # Le batch peut être juste x, ou (x, y)
         if isinstance(batch, tuple) or isinstance(batch, list):
-            x, _ = batch # if y is present, ignore it for prediction
+            x, _ = batch # si y est présent, l'ignorer pour la prédiction
         else:
             x = batch
-        y_pred_scaled = self(x)
-        # Inverse transform predictions to original scale
-        y_pred_unscaled = self.y_scaler.inverse_transform(y_pred_scaled.detach().cpu().numpy())
-        return torch.tensor(y_pred_unscaled, dtype=torch.float32) # Return as tensor
+        y_pred_echelle = self(x)
+        # Transformer inversement les prédictions à l'échelle originale
+        y_pred_original_np = self.scaler_y.inverse_transform(y_pred_echelle.detach().cpu().numpy())
+        return torch.tensor(y_pred_original_np, dtype=torch.float32) # Retourner comme tenseur
 
     def configure_optimizers(self):
-        optimizer = self.optimizer_class(self.parameters(), lr=self.lr)
-        return optimizer
+        # Utiliser self.modele_pytorch.parameters() car les paramètres sont dans ce sous-module
+        optimiseur = self.classe_optimiseur(self.modele_pytorch.parameters(), lr=self.lr)
+        return optimiseur
 ```
 
+## class ModeleMLP(nn.Module)
+Modèle générique de Perceptron Multi-Couches (MLP).
+Peut créer des MLP avec un nombre variable de couches, d'unités cachées, de fonctions d'activation et de dropout.
+Utilisé pour le TP3 (prédiction de logements) et adaptable pour le TP4 (MNIST) si `dim_entree`/`dim_sortie` sont définis.
+
+**Entrées (`__init__`) :**
+- `dim_entree` (int) : Dimensionalité de la couche d'entrée.
+- `dim_sortie` (int) : Dimensionalité de la couche de sortie.
+- `couches_cachees_dims` (list[int], optionnel) : Liste où chaque entier est le nombre de neurones dans une couche cachée.
+  Par défaut à `[64, 32]` (deux couches cachées).
+- `fonction_activation` (nn.Module, optionnel) : Fonction d'activation à utiliser après chaque couche cachée.
+  Par défaut `nn.ReLU()`. Si `None`, aucune activation n'est appliquée (couches linéaires).
+- `taux_dropout` (list[float], optionnel) : Liste des taux de dropout à appliquer après l'activation de chaque couche cachée.
+  La longueur doit correspondre à `couches_cachees_dims`. Si `None` ou vide, pas de dropout. Par défaut `None`.
+- `fonction_activation_finale` (nn.Module, optionnel) : Fonction d'activation pour la couche de sortie. Par défaut `None`.
+
+**Entrées (`forward`) :**
+- `x` (torch.Tensor) : Le tenseur d'entrée. Si le modèle attend une entrée aplatie (ex: pour des images),
+l'aplatissement doit se produire avant cet appel ou comme première étape ici.
+
+**Sorties (de `forward`) :**
+- (torch.Tensor) : Le tenseur de sortie (prédictions).
+
 ```python
-## class MLPModel(nn.Module)
-# Generic Multi-Layer Perceptron (MLP) model.
-# Can create MLPs with a variable number of layers, hidden units, activation functions, and dropout.
-# Used for TP3 (housing prediction) and adaptable for TP4 (MNIST) if input_dim/output_dim are set.
-
-# Entrées (__init__) :
-# - input_dim (int): Dimensionality of the input layer.
-# - output_dim (int): Dimensionality of the output layer.
-# - hidden_layers (list of int, optional): List where each int is the number of neurons in a hidden layer.
-#   Defaults to [64, 32] (two hidden layers).
-# - activation_fn (nn.Module, optional): Activation function to use after each hidden layer.
-#   Defaults to nn.ReLU(). If None, no activation is applied (linear layers).
-# - dropout_rates (list of float, optional): List of dropout rates to apply after each hidden layer's activation.
-#   Length must match `hidden_layers`. If None or empty, no dropout. Defaults to None.
-# - final_activation_fn (nn.Module, optional): Activation function for the output layer. Defaults to None.
-
-
-# Entrées (forward) :
-# - x (torch.Tensor): The input tensor. If model expects flattened input (e.g., for images),
-#                     flattening should happen before this call or as the first step here.
-
-# Sorties (de forward) :
-# - (torch.Tensor): The output tensor (predictions).
-import torch
-import torch.nn as nn
 from collections import OrderedDict
 
-class MLPModel(nn.Module):
+class ModeleMLP(nn.Module):
     """
-    Generic Multi-Layer Perceptron (MLP) model.
-    Allows specifying number of hidden layers, units, activation, and dropout.
+    Modèle générique de Perceptron Multi-Couches (MLP).
+    Permet de spécifier le nombre de couches cachées, d'unités, d'activation et de dropout.
     """
-    def __init__(self, input_dim: int, output_dim: int, 
-                 hidden_layers: list = [64, 32], 
-                 activation_fn: nn.Module = nn.ReLU(),
-                 dropout_rates: list = None,
-                 final_activation_fn: nn.Module = None):
-        super(MLPModel, self).__init__()
+    def __init__(self, dim_entree: int, dim_sortie: int, 
+                 couches_cachees_dims: list = [64, 32], 
+                 fonction_activation: nn.Module = nn.ReLU(),
+                 taux_dropout: list = None, # Liste de floats, ex: [0.2, 0.1]
+                 fonction_activation_finale: nn.Module = None,
+                 aplatir_entree: bool = False): # Pour les images par exemple
+        super(ModeleMLP, self).__init__()
         
-        layers = OrderedDict()
-        current_dim = input_dim
+        self.aplatir_entree = aplatir_entree
+        couches = OrderedDict()
+        dim_actuelle = dim_entree
 
-        for i, h_dim in enumerate(hidden_layers):
-            layers[f'fc{i+1}'] = nn.Linear(current_dim, h_dim)
-            if activation_fn is not None:
-                layers[f'act{i+1}'] = activation_fn
-            if dropout_rates and i < len(dropout_rates) and dropout_rates[i] > 0:
-                layers[f'dropout{i+1}'] = nn.Dropout(dropout_rates[i])
-            current_dim = h_dim
+        for i, h_dim in enumerate(couches_cachees_dims):
+            couches[f'fc{i+1}'] = nn.Linear(dim_actuelle, h_dim)
+            if fonction_activation is not None:
+                couches[f'act{i+1}'] = fonction_activation
+            if taux_dropout and i < len(taux_dropout) and taux_dropout[i] > 0:
+                couches[f'dropout{i+1}'] = nn.Dropout(taux_dropout[i])
+            dim_actuelle = h_dim
         
-        layers['output_fc'] = nn.Linear(current_dim, output_dim)
-        if final_activation_fn is not None:
-            layers['output_act'] = final_activation_fn
+        couches['fc_sortie'] = nn.Linear(dim_actuelle, dim_sortie)
+        if fonction_activation_finale is not None:
+            couches['act_finale'] = fonction_activation_finale
             
-        self.network = nn.Sequential(layers)
+        self.reseau = nn.Sequential(couches)
 
     def forward(self, x: torch.Tensor) -> torch.Tensor:
-        # If x is an image batch (e.g., [batch_size, C, H, W]), flatten it.
-        # This MLP expects 1D features per sample.
-        if x.ndim > 2: # Assumes input_dim was calculated based on flattened size
+        # Si x est un batch d'images (ex: [batch_size, C, H, W]), l'aplatir.
+        # Ce MLP attend des caractéristiques 1D par échantillon.
+        if self.aplatir_entree and x.ndim > 2: 
             x = x.view(x.size(0), -1) 
-        return self.network(x)
+        return self.reseau(x)
 
-# Example Usage for TP3 Models:
-# model_single_layer_tp3 = MLPModel(input_dim=19, output_dim=1, hidden_layers=[], activation_fn=None) # Linear layer
-# model_2_layers_tp3 = MLPModel(input_dim=19, output_dim=1, hidden_layers=[64], activation_fn=nn.ReLU())
-# model_4_layers_tp3 = MLPModel(input_dim=19, output_dim=1, hidden_layers=[128, 64, 32], activation_fn=nn.ReLU())
-# model_5_layers_dropout_tp3 = MLPModel(input_dim=19, output_dim=1, 
-#                                      hidden_layers=[256, 128, 64, 32], 
-#                                      activation_fn=nn.ReLU(),
-#                                      dropout_rates=[0.2, 0.2, 0.0, 0.0]) # Dropout after first two ReLUs
+# Exemples d'utilisation pour les modèles du TP3 :
+# Pour dim_entree=19 caractéristiques (après prétraitement dans le TP3) et dim_sortie=1 (prix)
+
+# Modèle à une seule couche (linéaire) du TP3
+# mlp_1_couche_tp3 = ModeleMLP(dim_entree=19, dim_sortie=1, couches_cachees_dims=[], fonction_activation=None)
+
+# Modèle à 2 couches du TP3 (1 couche cachée de 64 neurones + ReLU, puis couche de sortie)
+# mlp_2_couches_tp3 = ModeleMLP(dim_entree=19, dim_sortie=1, couches_cachees_dims=[64], fonction_activation=nn.ReLU())
+
+# Modèle à 4 couches du TP3 (3 couches cachées [128, 64, 32] + ReLU, puis couche de sortie)
+# mlp_4_couches_tp3 = ModeleMLP(dim_entree=19, dim_sortie=1, couches_cachees_dims=[128, 64, 32], fonction_activation=nn.ReLU())
+
+# Modèle à 5 couches avec Dropout du TP3
+# (4 couches cachées [256, 128, 64, 32] + ReLU, dropout après les 2 premières activations, puis couche de sortie)
+# mlp_5_couches_dropout_tp3 = ModeleMLP(dim_entree=19, dim_sortie=1, 
+#                                      couches_cachees_dims=[256, 128, 64, 32], 
+#                                      fonction_activation=nn.ReLU(),
+#                                      taux_dropout=[0.2, 0.2, 0.0, 0.0]) # Dropout après les 2 premières activations ReLU
 ```
 
+## def visualiser_predictions_regression_pytorch(liste_predictions_batch: list, y_vrai_serie_original: pd.Series, scaler_y: MinMaxScaler, nb_echantillons_a_tracer: int = 100, titre: str = "Prédictions vs Valeurs Réelles (PyTorch)", label_x: str = "Index Maison", label_y: str = "Valeur Maison")
+Trace les valeurs vraies vs. prédites pour un modèle de régression PyTorch.
+`liste_predictions_batch` est une liste de lots de tenseurs prédits (sortie de `trainer.predict`).
+Ces prédictions sont concaténées, converties en NumPy, et transformées inversement en utilisant `scaler_y`.
+`y_vrai_serie_original` contient les valeurs vraies originales, non mises à l'échelle.
+Utilisé dans le TP3.
+
+**Entrées :**
+- `liste_predictions_batch` (list) : Liste de tenseurs PyTorch, où chaque tenseur est un lot de prédictions mises à l'échelle.
+- `y_vrai_serie_original` (pd.Series) : Série Pandas des valeurs cibles vraies dans leur échelle originale (non mise à l'échelle).
+- `scaler_y` (MinMaxScaler) : L'objet scaler utilisé pour la variable cible, pour la transformation inverse des prédictions.
+- `nb_echantillons_a_tracer` (int, optionnel) : Nombre d'échantillons initiaux à tracer. Par défaut 100.
+- `titre` (str, optionnel) : Titre du graphique.
+- `label_x` (str, optionnel) : Étiquette pour l'axe des x.
+- `label_y` (str, optionnel) : Étiquette pour l'axe des y.
+
+**Sorties :**
+- Aucune (affiche le graphique).
+
 ```python
-## def plot_regression_predictions_pytorch(predictions_list: list, y_true_series: pd.Series, y_scaler: MinMaxScaler, num_samples_to_plot: int = 100, title: str = "Predictions vs Real Values (PyTorch)", xlabel: str = "House Index", ylabel: str = "House Value")
-# Plots true vs. predicted values for a PyTorch regression model.
-# `predictions_list` is a list of batches of predicted tensors (output from trainer.predict).
-# These predictions are concatenated, converted to NumPy, and inverse-transformed using y_scaler.
-# `y_true_series` contains the original, unscaled true values.
-# Used in TP3.
-
-# Entrées :
-# - predictions_list (list): List of PyTorch tensors, where each tensor is a batch of scaled predictions.
-# - y_true_series (pd.Series): Pandas Series of true target values in their original (unscaled) scale.
-# - y_scaler (MinMaxScaler): The scaler object used for the target variable, for inverse transformation of predictions.
-# - num_samples_to_plot (int, optional): Number of initial samples to plot. Defaults to 100.
-# - title (str, optional): Title of the plot.
-# - xlabel (str, optional): Label for the x-axis.
-# - ylabel (str, optional): Label for the y-axis.
-
-# Sorties :
-# - None (displays the plot).
-import torch
-import pandas as pd
-import numpy as np
-import matplotlib.pyplot as plt
-import seaborn as sns
-from sklearn.preprocessing import MinMaxScaler
-
-def plot_regression_predictions_pytorch(predictions_list: list, y_true_series: pd.Series, y_scaler: MinMaxScaler, num_samples_to_plot: int = 100, title: str = "Predictions vs Real Values (PyTorch)", xlabel: str = "House Index", ylabel: str = "House Value"):
+def visualiser_predictions_regression_pytorch(liste_predictions_batch: list, y_vrai_serie_original: pd.Series, scaler_y: MinMaxScaler, nb_echantillons_a_tracer: int = 100, titre: str = "Prédictions vs Valeurs Réelles (PyTorch)", label_x: str = "Index Maison", label_y: str = "Valeur Maison"):
     """
-    Plots true vs. predicted values for PyTorch regression models.
-    `predictions_list` contains batches of SCALED predictions from trainer.predict().
-    `y_true_series` contains ORIGINAL (unscaled) true values.
-    Predictions are inverse-transformed using y_scaler.
+    Trace les valeurs vraies vs. prédites pour les modèles de régression PyTorch.
+    `liste_predictions_batch` contient des lots de prédictions MISES À L'ÉCHELLE issues de trainer.predict().
+    `y_vrai_serie_original` contient les valeurs vraies ORIGINALES (non mises à l'échelle).
+    Les prédictions sont transformées inversement en utilisant scaler_y.
     """
-    # Concatenate all prediction tensors from the list of batches
-    if not predictions_list:
-        print("Warning: predictions_list is empty. Nothing to plot.")
+    # Concaténer tous les tenseurs de prédiction de la liste de lots
+    if not liste_predictions_batch:
+        print("Avertissement : liste_predictions_batch est vide. Rien à tracer.")
         return
         
-    all_preds_scaled_tensor = torch.cat(predictions_list, dim=0)
+    tenseur_toutes_preds_echelle = torch.cat(liste_predictions_batch, dim=0)
     
-    # Convert to NumPy and ensure it's 2D for the scaler
-    all_preds_scaled_np = all_preds_scaled_tensor.detach().cpu().numpy()
-    if all_preds_scaled_np.ndim == 1:
-        all_preds_scaled_np = all_preds_scaled_np.reshape(-1, 1)
+    # Convertir en NumPy et s'assurer qu'il est 2D pour le scaler
+    np_toutes_preds_echelle = tenseur_toutes_preds_echelle.detach().cpu().numpy()
+    if np_toutes_preds_echelle.ndim == 1:
+        np_toutes_preds_echelle = np_toutes_preds_echelle.reshape(-1, 1)
 
-    # Inverse transform predictions
-    y_pred_original_scale = y_scaler.inverse_transform(all_preds_scaled_np).flatten()
+    # Transformer inversement les prédictions
+    y_pred_original_scale = scaler_y.inverse_transform(np_toutes_preds_echelle).flatten()
 
-    # Get true values for plotting
-    y_true_plot = y_true_series.values[:num_samples_to_plot]
-    y_pred_plot = y_pred_original_scale[:num_samples_to_plot]
+    # Obtenir les valeurs vraies pour le traçage
+    y_vrai_pour_graph = y_vrai_serie_original.values[:nb_echantillons_a_tracer]
+    y_pred_pour_graph = y_pred_original_scale[:nb_echantillons_a_tracer]
     
-    # Ensure lengths match for DataFrame creation (in case y_true_series has fewer than num_samples_to_plot elements)
-    actual_num_samples = min(len(y_true_plot), len(y_pred_plot))
+    # S'assurer que les longueurs correspondent pour la création du DataFrame
+    nb_echantillons_reel = min(len(y_vrai_pour_graph), len(y_pred_pour_graph))
 
-    result_df = pd.DataFrame({
-        'Index': list(range(actual_num_samples)),
-        'Real Values': y_true_plot[:actual_num_samples],
-        'Predictions': y_pred_plot[:actual_num_samples]
+    df_resultat = pd.DataFrame({
+        'Index': list(range(nb_echantillons_reel)),
+        'Valeurs Réelles': y_vrai_pour_graph[:nb_echantillons_reel],
+        'Prédictions': y_pred_pour_graph[:nb_echantillons_reel]
     })
 
     plt.figure(figsize=(15, 7))
-    sns.lineplot(data=result_df, x='Index', y='Real Values', marker='o', label='Real Values', linestyle='-')
-    sns.lineplot(data=result_df, x='Index', y='Predictions', marker='x', label='Predictions', linestyle='--')
+    sns.lineplot(data=df_resultat, x='Index', y='Valeurs Réelles', marker='o', label='Valeurs Réelles', linestyle='-')
+    sns.lineplot(data=df_resultat, x='Index', y='Prédictions', marker='x', label='Prédictions', linestyle='--')
 
-    plt.title(title)
-    plt.xlabel(xlabel)
-    plt.ylabel(ylabel)
+    plt.title(titre)
+    plt.xlabel(label_x)
+    plt.ylabel(label_y)
     plt.legend()
     plt.grid(True)
     plt.show()
 ```
 
+## class ModeleLightningMNIST(pl.LightningModule)
+Module PyTorch Lightning pour la classification MNIST.
+Gère les étapes d'entraînement, de validation et de test, en enregistrant la perte et la précision.
+Utilisé dans le TP4.
+
+**Entrées (`__init__`) :**
+- `modele_pytorch` (nn.Module) : Le réseau de neurones PyTorch (ex: un MLP ou un CNN).
+- `classe_optimiseur` (torch.optim.Optimizer) : La classe d'optimiseur (ex: `torch.optim.SGD`, `torch.optim.Adam`).
+- `nb_classes` (int, optionnel) : Nombre de classes de sortie (10 pour MNIST). Par défaut 10.
+- `taux_apprentissage` (float, optionnel) : Taux d'apprentissage pour l'optimiseur. Par défaut 1e-4.
+- `decroissance_poids` (float, optionnel) : Décroissance de poids (pénalité L2) pour l'optimiseur. Par défaut 1e-4.
+
+**Sorties :**
+- (Implicitement) Enregistre les métriques, gère l'entraînement.
+
 ```python
-## class MNISTLightningModel(pl.LightningModule)
-# PyTorch Lightning module for MNIST classification.
-# Handles training, validation, and test steps, logging loss and accuracy.
-# Used in TP4.
-
-# Entrées (__init__) :
-# - model (nn.Module): The PyTorch neural network (e.g., an MLP or CNN).
-# - optimizer_class (torch.optim.Optimizer): The optimizer class (e.g., torch.optim.SGD, torch.optim.Adam).
-# - num_classes (int, optional): Number of output classes (10 for MNIST). Defaults to 10.
-# - learning_rate (float, optional): Learning rate for the optimizer. Defaults to 1e-4.
-# - weight_decay (float, optional): Weight decay (L2 penalty) for the optimizer. Defaults to 1e-4.
-
-# Sorties :
-# - (Implicitly) Logs metrics, manages training.
-import pytorch_lightning as pl
-import torch
-import torch.nn as nn
-import torch.nn.functional as F
-import torch.optim as optim
-# from torchmetrics import Accuracy # Older import
-from torchmetrics.classification import MulticlassAccuracy # More specific
-
-class MNISTLightningModel(pl.LightningModule):
+class ModeleLightningMNIST(pl.LightningModule):
     """
-    PyTorch Lightning module for MNIST classification.
+    Module PyTorch Lightning pour la classification MNIST.
     """
-    def __init__(self, model: nn.Module, optimizer_class, num_classes: int = 10, learning_rate: float = 1e-4, weight_decay: float = 1e-4):
+    def __init__(self, modele_pytorch: nn.Module, classe_optimiseur, nb_classes: int = 10, taux_apprentissage: float = 1e-4, decroissance_poids: float = 1e-4):
         super().__init__()
-        self.model = model
-        self.num_classes = num_classes
-        self.optimizer_class = optimizer_class
-        self.lr = learning_rate
-        self.weight_decay = weight_decay
+        self.modele_pytorch = modele_pytorch # Renommé pour éviter conflit
+        self.nb_classes = nb_classes
+        self.classe_optimiseur = classe_optimiseur
+        self.lr = taux_apprentissage
+        self.decroissance_poids = decroissance_poids
         
-        # Using MulticlassAccuracy
-        self.train_acc = MulticlassAccuracy(num_classes=num_classes)
-        self.val_acc = MulticlassAccuracy(num_classes=num_classes)
-        self.test_acc = MulticlassAccuracy(num_classes=num_classes)
+        # Utilisation de MulticlassAccuracy
+        self.train_acc = MulticlassAccuracy(num_classes=nb_classes)
+        self.val_acc = MulticlassAccuracy(num_classes=nb_classes)
+        self.test_acc = MulticlassAccuracy(num_classes=nb_classes)
         
-        self.save_hyperparameters(ignore=['model']) # PTL saves hyperparameters
+        self.save_hyperparameters(ignore=['modele_pytorch']) # PTL enregistre les hyperparamètres
 
     def forward(self, x: torch.Tensor) -> torch.Tensor:
-        return self.model(x)
+        return self.modele_pytorch(x)
 
-    def _shared_step(self, batch, batch_idx, stage: str):
-        x, y_true = batch
-        logits = self(x) # Raw model output
-        loss = F.cross_entropy(logits, y_true) # CrossEntropyLoss expects raw logits
+    def _etape_partagee(self, batch, batch_idx, phase: str):
+        x, y_vrai = batch
+        logits = self(x) # Sortie brute du modèle
+        perte = F.cross_entropy(logits, y_vrai) # CrossEntropyLoss attend les logits bruts
         
-        # For accuracy, need predicted class indices
-        # preds = torch.argmax(logits, dim=1) # Not needed if metric handles logits
+        metrique_acc = getattr(self, f"{phase}_acc")
+        acc = metrique_acc(logits, y_vrai) # Passer directement les logits
         
-        acc_metric = getattr(self, f"{stage}_acc")
-        acc = acc_metric(logits, y_true) # Pass logits directly
-        
-        self.log_dict({f'{stage}_loss': loss, f"{stage}_acc": acc}, 
-                      on_step=(stage=="train"), on_epoch=True, prog_bar=True, logger=True)
-        return loss
+        self.log_dict({f'{phase}_perte': perte, f"{phase}_acc": acc}, 
+                      on_step=(phase=="train"), on_epoch=True, prog_bar=True, logger=True)
+        return perte
 
     def training_step(self, batch, batch_idx):
-        return self._shared_step(batch, batch_idx, "train")
-
-    # Optional: Reset metrics at epoch end if they accumulate state in a way not desired
-    # Torchmetrics typically handles this well with on_epoch=True logging.
-    # def on_train_epoch_end(self):
-    #     self.train_acc.reset()
+        return self._etape_partagee(batch, batch_idx, "train")
 
     def validation_step(self, batch, batch_idx):
-        return self._shared_step(batch, batch_idx, "val")
-
-    # def on_validation_epoch_end(self):
-    #     self.val_acc.reset()
+        return self._etape_partagee(batch, batch_idx, "val")
 
     def test_step(self, batch, batch_idx):
-        return self._shared_step(batch, batch_idx, "test")
-
-    # def on_test_epoch_end(self):
-    #     self.test_acc.reset()
+        return self._etape_partagee(batch, batch_idx, "test")
+        
+    # Les réinitialisations de métriques on_..._epoch_end sont gérées par Torchmetrics avec on_epoch=True
 
     def configure_optimizers(self):
-        # Note: self.model.parameters() is used if model is passed, 
-        # or self.parameters() if the nn.Modules are direct attributes of this LightningModule
-        optimizer = self.optimizer_class(self.parameters(), lr=self.lr, weight_decay=self.weight_decay)
-        return optimizer
+        # self.parameters() inclut les paramètres de self.modele_pytorch
+        optimiseur = self.classe_optimiseur(self.parameters(), lr=self.lr, weight_decay=self.decroissance_poids)
+        return optimiseur
 ```
 
+## class ModeleCNNMNIST(nn.Module)
+Modèle générique de Réseau de Neurones Convolutifs (CNN), adaptable pour MNIST.
+Permet de définir une séquence de blocs convolutifs (Conv2d, Activation, MaxPool, Dropout)
+suivie d'une séquence de couches entièrement connectées.
+Utilisé pour le TP4.
+Note : La configuration des couches doit être soigneusement calculée pour que les dimensions correspondent, en particulier avant la première couche FC.
+
+**Entrées (`__init__`) :**
+- `canaux_entree` (int) : Nombre de canaux dans l'image d'entrée (1 pour MNIST en niveaux de gris).
+- `nb_classes` (int) : Nombre de classes de sortie (10 pour MNIST).
+- `config_couches_conv` (list[dict]) : Configuration pour les couches convolutives.
+  Chaque dict : `{'out_channels': int, 'kernel_size': int ou tuple, 'stride': int ou tuple, 'padding': int ou tuple,
+                  'pool_kernel_size': int ou tuple (optionnel), 'dropout_rate': float (optionnel)}`
+- `config_couches_fc` (list[dict]) : Configuration pour les couches entièrement connectées.
+  Chaque dict : `{'out_features': int, 'dropout_rate': float (optionnel)}`
+- `fonction_activation` (nn.Module, optionnel) : Fonction d'activation pour les couches conv et FC. Par défaut `nn.ReLU()`.
+- `taille_image_initiale` (tuple, optionnel) : (Hauteur, Largeur) de l'image d'entrée, nécessaire si `config_couches_fc`
+ne spécifie pas `in_features` pour la première couche FC. Par défaut (28,28) pour MNIST.
+
+**Entrées (`forward`) :**
+- `x` (torch.Tensor) : Tenseur d'entrée de forme (batch_size, canaux_entree, H, W).
+
+**Sorties (de `forward`) :**
+- (torch.Tensor) : Tenseur de sortie des logits (batch_size, nb_classes).
+
 ```python
-## class CNNModel MNIST(nn.Module)
-# Generic Convolutional Neural Network (CNN) model structure, adaptable for MNIST.
-# Allows defining a sequence of convolutional blocks (Conv2d, Activation, MaxPool, Dropout)
-# followed by a sequence of fully connected layers.
-# Used for TP4.
+class ModeleCNNMNIST(nn.Module):
+    def __init__(self, canaux_entree: int, nb_classes: int,
+                 config_couches_conv: list, # Liste de dictionnaires de configuration
+                 config_couches_fc: list,   # Liste de dictionnaires de configuration
+                 fonction_activation: nn.Module = nn.ReLU(),
+                 taille_image_initiale: tuple = (28, 28)): # (H, W)
+        super(ModeleCNNMNIST, self).__init__()
 
-# Entrées (__init__) :
-# - input_channels (int): Number of channels in the input image (1 for MNIST grayscale).
-# - num_classes (int): Number of output classes (10 for MNIST).
-# - conv_layers_config (list of dicts): Configuration for convolutional layers.
-#   Each dict: {'out_channels': int, 'kernel_size': int or tuple, 'stride': int or tuple, 'padding': int or tuple,
-#               'pool_kernel_size': int or tuple (optional), 'dropout_rate': float (optional)}
-# - fc_layers_config (list of dicts): Configuration for fully connected layers.
-#   Each dict: {'out_features': int, 'dropout_rate': float (optional)}
-# - activation_fn (nn.Module, optional): Activation function for conv and FC layers. Defaults to nn.ReLU().
-# - initial_image_size (tuple, optional): (Height, Width) of the input image, needed if fc_layers_config
-#                                         doesn't specify `in_features` for the first FC layer. Defaults to (28,28) for MNIST.
+        modules_conv = OrderedDict()
+        canaux_actuels = canaux_entree
+        h_actuelle, w_actuelle = taille_image_initiale
 
-# Entrées (forward) :
-# - x (torch.Tensor): Input tensor of shape (batch_size, input_channels, H, W).
-
-# Sorties (de forward) :
-# - (torch.Tensor): Output tensor of logits (batch_size, num_classes).
-
-import torch
-import torch.nn as nn
-from collections import OrderedDict
-
-class CNNModelMNIST(nn.Module):
-    def __init__(self, input_channels: int, num_classes: int,
-                 conv_layers_config: list,
-                 fc_layers_config: list,
-                 activation_fn: nn.Module = nn.ReLU(),
-                 initial_image_size: tuple = (28, 28)):
-        super(CNNModelMNIST, self).__init__()
-
-        conv_modules = OrderedDict()
-        current_channels = input_channels
-        current_h, current_w = initial_image_size
-
-        for i, cfg in enumerate(conv_layers_config):
-            conv_modules[f'conv{i+1}'] = nn.Conv2d(
-                in_channels=current_channels,
-                out_channels=cfg['out_channels'],
-                kernel_size=cfg['kernel_size'],
-                stride=cfg.get('stride', 1),
-                padding=cfg.get('padding', 0)
-            )
-            current_h = (current_h + 2 * cfg.get('padding', 0) - cfg['kernel_size']) // cfg.get('stride', 1) + 1
-            current_w = (current_w + 2 * cfg.get('padding', 0) - cfg['kernel_size']) // cfg.get('stride', 1) + 1
+        for i, cfg in enumerate(config_couches_conv):
+            padding = cfg.get('padding', 0)
+            stride = cfg.get('stride', 1)
+            kernel_size = cfg['kernel_size']
             
-            if activation_fn:
-                conv_modules[f'act_conv{i+1}'] = activation_fn
+            # S'assurer que kernel_size est un tuple pour le calcul des dimensions
+            if isinstance(kernel_size, int): kernel_size_h, kernel_size_w = kernel_size, kernel_size
+            else: kernel_size_h, kernel_size_w = kernel_size
+            
+            if isinstance(padding, int): padding_h, padding_w = padding, padding
+            else: padding_h, padding_w = padding
+
+            if isinstance(stride, int): stride_h, stride_w = stride, stride
+            else: stride_h, stride_w = stride
+
+
+            modules_conv[f'conv{i+1}'] = nn.Conv2d(
+                in_channels=canaux_actuels,
+                out_channels=cfg['out_channels'],
+                kernel_size=kernel_size, # Peut être int ou tuple
+                stride=stride,       # Peut être int ou tuple
+                padding=padding      # Peut être int ou tuple
+            )
+            # Calcul de la dimension de sortie après Conv2d
+            h_actuelle = (h_actuelle + 2 * padding_h - kernel_size_h) // stride_h + 1
+            w_actuelle = (w_actuelle + 2 * padding_w - kernel_size_w) // stride_w + 1
+            
+            if fonction_activation:
+                modules_conv[f'act_conv{i+1}'] = fonction_activation
             
             if 'pool_kernel_size' in cfg and cfg['pool_kernel_size']:
-                conv_modules[f'pool{i+1}'] = nn.MaxPool2d(kernel_size=cfg['pool_kernel_size'], stride=cfg.get('pool_stride', cfg['pool_kernel_size']))
-                current_h = current_h // cfg.get('pool_stride', cfg['pool_kernel_size'])
-                current_w = current_w // cfg.get('pool_stride', cfg['pool_kernel_size'])
+                pool_kernel = cfg['pool_kernel_size']
+                pool_stride = cfg.get('pool_stride', pool_kernel) # Stride = kernel_size par défaut pour MaxPool
+                
+                if isinstance(pool_kernel, int): pool_kernel_h, pool_kernel_w = pool_kernel, pool_kernel
+                else: pool_kernel_h, pool_kernel_w = pool_kernel
+                
+                if isinstance(pool_stride, int): pool_stride_h, pool_stride_w = pool_stride, pool_stride
+                else: pool_stride_h, pool_stride_w = pool_stride
+
+                modules_conv[f'pool{i+1}'] = nn.MaxPool2d(kernel_size=pool_kernel, stride=pool_stride)
+                # Calcul de la dimension de sortie après MaxPool2d
+                h_actuelle = h_actuelle // pool_stride_h # Simplifié, MaxPool peut avoir padding/dilation
+                w_actuelle = w_actuelle // pool_stride_w
 
             if 'dropout_rate' in cfg and cfg['dropout_rate'] > 0:
-                conv_modules[f'dropout_conv{i+1}'] = nn.Dropout2d(cfg['dropout_rate']) # Dropout2d for conv layers
-            current_channels = cfg['out_channels']
+                # Dropout2d est pour les couches conv (agit sur les canaux entiers)
+                modules_conv[f'dropout_conv{i+1}'] = nn.Dropout2d(cfg['dropout_rate']) 
+            canaux_actuels = cfg['out_channels']
 
-        self.conv_layers = nn.Sequential(conv_modules)
+        self.couches_conv = nn.Sequential(modules_conv)
         
-        # Calculate the flattened size after conv layers
-        # Use a dummy tensor to find the output shape of conv_layers
-        with torch.no_grad():
-            dummy_input = torch.randn(1, input_channels, initial_image_size[0], initial_image_size[1])
-            conv_output_shape = self.conv_layers(dummy_input).shape
-            flattened_size = conv_output_shape[1] * conv_output_shape[2] * conv_output_shape[3]
+        # Calculer la taille aplatie après les couches de convolution
+        # Utiliser un tenseur factice pour trouver la forme de sortie des couches_conv
+        with torch.no_grad(): # Pas besoin de gradients ici
+            entree_factice = torch.randn(1, canaux_entree, taille_image_initiale[0], taille_image_initiale[1])
+            forme_sortie_conv = self.couches_conv(entree_factice).shape
+            taille_aplatie = forme_sortie_conv[1] * forme_sortie_conv[2] * forme_sortie_conv[3]
+            # Equivalent à : taille_aplatie = canaux_actuels * h_actuelle * w_actuelle
 
-        fc_modules = OrderedDict()
-        current_features = flattened_size
-        for i, cfg in enumerate(fc_layers_config):
-            fc_modules[f'fc{i+1}'] = nn.Linear(current_features, cfg['out_features'])
-            if activation_fn and i < len(fc_layers_config) -1 : # No activation usually on last FC before softmax/crossentropy
-                 fc_modules[f'act_fc{i+1}'] = activation_fn
+        modules_fc = OrderedDict()
+        caracteristiques_actuelles = taille_aplatie
+        # Construire les couches FC
+        for i, cfg_fc in enumerate(config_couches_fc):
+            modules_fc[f'fc{i+1}'] = nn.Linear(caracteristiques_actuelles, cfg_fc['out_features'])
+            # Pas d'activation sur la dernière couche FC avant softmax/cross_entropy typiquement
+            if fonction_activation and i < len(config_couches_fc) - 1 : 
+                 modules_fc[f'act_fc{i+1}'] = fonction_activation
 
-            if 'dropout_rate' in cfg and cfg['dropout_rate'] > 0 and i < len(fc_layers_config) -1: # No dropout usually on last FC
-                fc_modules[f'dropout_fc{i+1}'] = nn.Dropout(cfg['dropout_rate'])
-            current_features = cfg['out_features']
+            # Pas de dropout sur la dernière couche FC typiquement
+            if 'dropout_rate' in cfg_fc and cfg_fc['dropout_rate'] > 0 and i < len(config_couches_fc) -1: 
+                modules_fc[f'dropout_fc{i+1}'] = nn.Dropout(cfg_fc['dropout_rate'])
+            caracteristiques_actuelles = cfg_fc['out_features']
         
-        # Ensure last layer outputs num_classes
-        # If fc_layers_config is empty or last layer doesn't match num_classes, add/replace last layer
-        if not fc_layers_config or current_features != num_classes :
-             fc_modules[f'fc_final_output'] = nn.Linear(current_features,num_classes)
+        # S'assurer que la dernière couche sort nb_classes
+        if not config_couches_fc or caracteristiques_actuelles != nb_classes :
+             modules_fc[f'fc_sortie_finale'] = nn.Linear(caracteristiques_actuelles, nb_classes)
 
-
-        self.fc_layers = nn.Sequential(fc_modules)
+        self.couches_fc = nn.Sequential(modules_fc)
 
     def forward(self, x: torch.Tensor) -> torch.Tensor:
-        x = self.conv_layers(x)
-        x = torch.flatten(x, 1) # Flatten all dimensions except batch
-        x = self.fc_layers(x)
+        x = self.couches_conv(x)
+        x = torch.flatten(x, 1) # Aplatir toutes les dimensions sauf le batch
+        x = self.couches_fc(x)
         return x
 
-# Example Usage for TP4 CNNs:
-# cnn_one_conv_config = [
-#     {'out_channels': 32, 'kernel_size': 3, 'padding':0, 'pool_kernel_size': 2} # Valid padding (no padding)
+# Exemple d'utilisation pour les CNN du TP4 :
+# cnn_un_conv_config_tp4 = [
+#     {'out_channels': 32, 'kernel_size': 3, 'padding':0, 'pool_kernel_size': 2} 
 # ]
-# fc_one_conv_config = [
-#     {'out_features': 128},
-#     # Final layer to num_classes is implicitly handled by the class if not specified
+# fc_un_conv_config_tp4 = [
+#     {'out_features': 128}, # La couche finale vers nb_classes est gérée implicitement
 # ]
-# cnn1_tp4 = CNNModelMNIST(input_channels=1, num_classes=10, conv_layers_config=cnn_one_conv_config, fc_layers_config=fc_one_conv_config, initial_image_size=(28,28))
-# print(summary(cnn1_tp4, input_size=(1, 1, 28, 28)))
+# cnn1_tp4_test = ModeleCNNMNIST(canaux_entree=1, nb_classes=10, 
+#                                config_couches_conv=cnn_un_conv_config_tp4, 
+#                                config_couches_fc=fc_un_conv_config_tp4, 
+#                                taille_image_initiale=(28,28))
+# print(torchinfo_summary(cnn1_tp4_test, input_size=(1, 1, 28, 28))) # BS, C, H, W
 
-
-# cnn_two_conv_config = [
-#     {'out_channels': 32, 'kernel_size': 3, 'padding':0, 'dropout_rate': 0.2}, # Valid padding means kernel_size=3 reduces dim by 2
+# cnn_deux_conv_config_tp4 = [
+#     {'out_channels': 32, 'kernel_size': 3, 'padding':0, 'dropout_rate': 0.2},
 #     {'out_channels': 32, 'kernel_size': 3, 'padding':0, 'dropout_rate': 0.2, 'pool_kernel_size': 2}
 # ]
-# fc_two_conv_config = [
+# fc_deux_conv_config_tp4 = [
 #     {'out_features': 128, 'dropout_rate': 0.2},
 # ]
-# cnn2_tp4 = CNNModelMNIST(input_channels=1, num_classes=10, conv_layers_config=cnn_two_conv_config, fc_layers_config=fc_two_conv_config, initial_image_size=(28,28))
-# print(summary(cnn2_tp4, input_size=(1, 1, 28, 28)))
+# cnn2_tp4_test = ModeleCNNMNIST(canaux_entree=1, nb_classes=10, 
+#                                config_couches_conv=cnn_deux_conv_config_tp4, 
+#                                config_couches_fc=fc_deux_conv_config_tp4, 
+#                                taille_image_initiale=(28,28))
+# print(torchinfo_summary(cnn2_tp4_test, input_size=(1, 1, 28, 28)))
 ```
 
+## def creer_dataloaders_classification_images(chemin_dataset: str, taille_batch: int, ratio_train: float, ratio_val: float, taille_img: int = 224, nb_workers: int = 2, pin_memory: bool = True)
+Crée des DataLoaders d'entraînement, de validation et de test pour la classification d'images à partir d'une structure de répertoires
+(ex: `chemin_dataset/classe_a/image1.jpg`, `chemin_dataset/classe_b/image2.jpg`).
+Applique des transformations standard pour l'entraînement (augmentation) et l'évaluation.
+Le jeu de données est divisé en ensembles d'entraînement, de validation et de test.
+Utilisé dans les TP5, TP6, TP7.
+
+**Entrées :**
+- `chemin_dataset` (str) : Chemin vers le répertoire racine du jeu de données.
+- `taille_batch` (int) : Nombre d'échantillons par lot.
+- `ratio_train` (float) : Proportion du jeu de données à allouer pour l'entraînement (ex: 0.8 pour 80%).
+- `ratio_val` (float) : Proportion du jeu de données à allouer pour la validation (ex: 0.1 pour 10%).
+L'ensemble de test sera le reste (1 - `ratio_train` - `ratio_val`).
+- `taille_img` (int, optionnel) : Taille à laquelle redimensionner les images (taille_img x taille_img). Par défaut 224.
+- `nb_workers` (int, optionnel) : Nombre de sous-processus à utiliser pour le chargement des données. Par défaut 2.
+- `pin_memory` (bool, optionnel) : Si `True`, le chargeur de données copiera les Tenseurs dans la mémoire épinglée CUDA avant de les retourner. Par défaut `True`.
+
+**Sorties :**
+- `loader_train` (DataLoader) : DataLoader pour l'ensemble d'entraînement.
+- `loader_val` (DataLoader) : DataLoader pour l'ensemble de validation.
+- `loader_test` (DataLoader) : DataLoader pour l'ensemble de test.
+- `noms_classes` (list) : Liste des noms de classes trouvés dans le jeu de données.
+
 ```python
-## def create_image_classification_dataloaders(dataset_path: str, batch_size: int, train_split_ratio: float, val_split_ratio: float, img_size: int = 224, num_workers: int = 2, pin_memory: bool = True)
-# Creates train, validation, and test DataLoaders for image classification from a directory structure
-# (e.g., dataset_path/class_a/image1.jpg, dataset_path/class_b/image2.jpg).
-# Applies standard transformations for training (augmentation) and evaluation.
-# The dataset is split into train, validation, and test sets.
-# Used in TP5, TP6, TP7.
+class SubsetAvecTransform(Dataset):
+    """
+    Un Dataset qui encapsule un Subset et applique une transformation à la volée.
+    """
+    def __init__(self, subset_original, transform=None):
+        self.subset_original = subset_original
+        self.transform = transform
 
-# Entrées :
-# - dataset_path (str): Path to the root directory of the dataset.
-# - batch_size (int): Number of samples per batch.
-# - train_split_ratio (float): Proportion of the dataset to allocate for training (e.g., 0.8 for 80%).
-# - val_split_ratio (float): Proportion of the dataset to allocate for validation (e.g., 0.1 for 10%).
-#                            The test set will be the remainder (1 - train_split_ratio - val_split_ratio).
-# - img_size (int, optional): Size to resize images to (img_size x img_size). Defaults to 224.
-# - num_workers (int, optional): How many subprocesses to use for data loading. Defaults to 2.
-# - pin_memory (bool, optional): If True, the data loader will copy Tensors into CUDA pinned memory before returning them. Defaults to True.
+    def __getitem__(self, index):
+        x, y = self.subset_original[index] # x est une image PIL ici
+        if self.transform:
+            x = self.transform(x)
+        return x, y
 
+    def __len__(self):
+        return len(self.subset_original)
 
-# Sorties :
-# - train_loader (DataLoader): DataLoader for the training set.
-# - val_loader (DataLoader): DataLoader for the validation set.
-# - test_loader (DataLoader): DataLoader for the test set.
-# - class_names (list): List of class names found in the dataset.
-import torch
-from torch.utils.data import DataLoader, random_split, Subset
-import torchvision.datasets as datasets
-import torchvision.transforms.v2 as transforms # Using v2 for modern augmentations
-import numpy as np
-
-def create_image_classification_dataloaders(
-    dataset_path: str, 
-    batch_size: int, 
-    train_split_ratio: float, 
-    val_split_ratio: float, 
-    img_size: int = 224,
-    num_workers: int = 2, # os.cpu_count() can be a good default
+def creer_dataloaders_classification_images(
+    chemin_dataset: str, 
+    taille_batch: int, 
+    ratio_train: float, 
+    ratio_val: float, 
+    taille_img: int = 224,
+    nb_workers: int = 2, 
     pin_memory: bool = True
 ) -> tuple[DataLoader, DataLoader, DataLoader, list]:
     """
-    Creates train, validation, and test DataLoaders for image classification.
-    Splits the dataset based on provided ratios.
-    Applies different transformations for train (with augmentation) and eval sets.
+    Crée des DataLoaders d'entraînement, de validation et de test pour la classification d'images.
+    Divise le jeu de données en fonction des ratios fournis.
+    Applique différentes transformations pour les ensembles d'entraînement (avec augmentation) et d'évaluation.
     """
 
     # Transformations
-    # Note: ToTensorV2() is part of transforms.v2, normal ToTensor is in original transforms
-    # Normalization values are typical for ImageNet pre-trained models
-    mean = [0.485, 0.456, 0.406]
-    std = [0.229, 0.224, 0.225]
+    moyenne_imagenet = [0.485, 0.456, 0.406]
+    std_imagenet = [0.229, 0.224, 0.225]
 
-    train_transform = transforms.Compose([
-        transforms.RandomResizedCrop(img_size, scale=(0.8, 1.0), ratio=(0.75, 1.33)),
-        transforms.RandomHorizontalFlip(p=0.5),
-        transforms.ColorJitter(brightness=0.2, contrast=0.2, saturation=0.2, hue=0.1),
-        transforms.RandomRotation(degrees=15),
-        transforms.PILToTensor(), # Converts PIL Image to Tensor
-        transforms.ToDtype(torch.float32, scale=True), # Converts to float and scales to [0,1]
-        transforms.Normalize(mean=mean, std=std)
+    transform_train = tv_transforms_v2.Compose([
+        tv_transforms_v2.RandomResizedCrop(taille_img, scale=(0.8, 1.0), ratio=(0.75, 1.33)),
+        tv_transforms_v2.RandomHorizontalFlip(p=0.5),
+        tv_transforms_v2.ColorJitter(brightness=0.2, contrast=0.2, saturation=0.2, hue=0.1),
+        tv_transforms_v2.RandomRotation(degrees=15),
+        tv_transforms_v2.PILToTensor(), 
+        tv_transforms_v2.ToDtype(torch.float32, scale=True), 
+        tv_transforms_v2.Normalize(mean=moyenne_imagenet, std=std_imagenet)
     ])
 
-    eval_transform = transforms.Compose([
-        transforms.Resize(img_size + 32), # Resize to a bit larger then center crop
-        transforms.CenterCrop(img_size),
-        transforms.PILToTensor(),
-        transforms.ToDtype(torch.float32, scale=True),
-        transforms.Normalize(mean=mean, std=std)
+    transform_eval = tv_transforms_v2.Compose([
+        tv_transforms_v2.Resize(taille_img + 32), 
+        tv_transforms_v2.CenterCrop(taille_img),
+        tv_transforms_v2.PILToTensor(),
+        tv_transforms_v2.ToDtype(torch.float32, scale=True),
+        tv_transforms_v2.Normalize(mean=moyenne_imagenet, std=std_imagenet)
     ])
 
-    # Load the full dataset (without transforms initially to allow splitting first)
-    # We will apply transforms per subset.
-    full_dataset_no_transform = datasets.ImageFolder(dataset_path)
-    class_names = full_dataset_no_transform.classes
+    # Charger le jeu de données complet (sans transformations initialement pour permettre la division)
+    dataset_complet_pil = tv_datasets.ImageFolder(chemin_dataset) # Les images sont chargées comme PIL par ImageFolder
+    noms_classes = dataset_complet_pil.classes
     
-    dataset_size = len(full_dataset_no_transform)
-    indices = list(range(dataset_size))
-    np.random.shuffle(indices) # Shuffle indices before splitting
+    taille_dataset = len(dataset_complet_pil)
+    indices = list(range(taille_dataset))
+    np.random.shuffle(indices) # Mélanger les indices avant la division
 
-    train_end_idx = int(train_split_ratio * dataset_size)
-    val_end_idx = train_end_idx + int(val_split_ratio * dataset_size)
+    # Calculer les tailles des splits
+    taille_train = int(ratio_train * taille_dataset)
+    taille_val = int(ratio_val * taille_dataset)
+    taille_test = taille_dataset - taille_train - taille_val
 
-    train_indices = indices[:train_end_idx]
-    val_indices = indices[train_end_idx:val_end_idx]
-    test_indices = indices[val_end_idx:]
+    if taille_test < 0:
+        raise ValueError("La somme de ratio_train et ratio_val ne peut pas dépasser 1.0")
+    if taille_train == 0 or taille_val == 0 or taille_test == 0:
+         print(f"Avertissement : Un des ensembles (train/val/test) a une taille de 0. Train: {taille_train}, Val: {taille_val}, Test: {taille_test}")
+         print("Veuillez ajuster les ratios ou vérifier la taille du dataset.")
+         # Gérer ce cas : par exemple, s'assurer qu'il y a au moins 1 échantillon ou lever une erreur plus stricte.
+         # Pour cet exemple, on continue, mais cela peut causer des problèmes plus tard.
+         if taille_test == 0 and taille_val > 1 : # prendre 1 de val pour test
+            taille_val -=1
+            taille_test +=1
+         elif taille_test == 0 and taille_train > 1: # prendre 1 de train pour test
+            taille_train -=1
+            taille_test +=1
+         # Idem pour val si val est 0
+
+    indices_train = indices[:taille_train]
+    indices_val = indices[taille_train : taille_train + taille_val]
+    indices_test = indices[taille_train + taille_val:]
     
-    if not test_indices: # Ensure test set is not empty
-        if val_indices: # If val exists, take some from val for test
-            num_test_from_val = max(1, int(0.1 * len(val_indices))) # e.g. 10% of val or at least 1
-            test_indices = val_indices[-num_test_from_val:]
-            val_indices = val_indices[:-num_test_from_val]
-        elif train_indices: # If only train exists, take some from train for test (and val)
-             # This case implies train_split_ratio + val_split_ratio is too high or 1.0
-            print("Warning: train_split_ratio + val_split_ratio is too high, deriving test set from train set.")
-            num_test_from_train = max(1, int(0.05 * len(train_indices))) # 5% of train for test
-            num_val_from_train = max(1, int(0.05 * len(train_indices)))  # 5% of train for val
-            test_indices = train_indices[-num_test_from_train:]
-            val_indices = train_indices[-(num_test_from_train + num_val_from_train):-num_test_from_train]
-            train_indices = train_indices[:-(num_test_from_train + num_val_from_train)]
-        else: # Dataset too small
-            raise ValueError("Dataset too small or split ratios incorrect, resulting in empty sets.")
+    # Créer des sous-ensembles (Subsets) de PyTorch
+    subset_train_pil = Subset(dataset_complet_pil, indices_train)
+    subset_val_pil = Subset(dataset_complet_pil, indices_val)
+    subset_test_pil = Subset(dataset_complet_pil, indices_test)
 
-
-    # Create dataset subsets with specific transformations
-    # Need to wrap ImageFolder with the transform for each subset
-    # This is a bit tricky; an easier way is to create three ImageFolder instances if paths allow,
-    # or apply transform inside a custom Subset wrapper or DataLoader's collate_fn.
-    # A common way: create a base dataset, then use Subset with a wrapper that applies transform.
+    # Appliquer les transformations aux sous-ensembles en utilisant la classe wrapper
+    dataset_train = SubsetAvecTransform(subset_train_pil, transform=transform_train)
+    dataset_val = SubsetAvecTransform(subset_val_pil, transform=transform_eval)
+    dataset_test = SubsetAvecTransform(subset_test_pil, transform=transform_eval)
     
-    class TransformedSubset(Dataset):
-        def __init__(self, subset, transform):
-            self.subset = subset
-            self.transform = transform
-        def __getitem__(self, index):
-            x, y = self.subset[index]
-            if self.transform:
-                x = self.transform(x)
-            return x, y
-        def __len__(self):
-            return len(self.subset)
+    # Créer les DataLoaders
+    loader_train = DataLoader(dataset_train, batch_size=taille_batch, shuffle=True, num_workers=nb_workers, pin_memory=pin_memory, drop_last=(len(dataset_train) % taille_batch == 1))
+    loader_val = DataLoader(dataset_val, batch_size=taille_batch, shuffle=False, num_workers=nb_workers, pin_memory=pin_memory, drop_last=(len(dataset_val) % taille_batch == 1))
+    loader_test = DataLoader(dataset_test, batch_size=taille_batch, shuffle=False, num_workers=nb_workers, pin_memory=pin_memory, drop_last=(len(dataset_test) % taille_batch == 1))
 
-    train_subset_no_transform = Subset(full_dataset_no_transform, train_indices)
-    val_subset_no_transform = Subset(full_dataset_no_transform, val_indices)
-    test_subset_no_transform = Subset(full_dataset_no_transform, test_indices)
-
-    train_dataset = TransformedSubset(train_subset_no_transform, train_transform)
-    val_dataset = TransformedSubset(val_subset_no_transform, eval_transform)
-    test_dataset = TransformedSubset(test_subset_no_transform, eval_transform)
-    
-    # Create DataLoaders
-    train_loader = DataLoader(train_dataset, batch_size=batch_size, shuffle=True, num_workers=num_workers, pin_memory=pin_memory)
-    val_loader = DataLoader(val_dataset, batch_size=batch_size, shuffle=False, num_workers=num_workers, pin_memory=pin_memory)
-    test_loader = DataLoader(test_dataset, batch_size=batch_size, shuffle=False, num_workers=num_workers, pin_memory=pin_memory)
-
-    print(f"DataLoaders created: Train ({len(train_dataset)} samples), Val ({len(val_dataset)} samples), Test ({len(test_dataset)} samples)")
-    return train_loader, val_loader, test_loader, class_names
+    print(f"DataLoaders créés : Train ({len(dataset_train)} échantillons), Val ({len(dataset_val)} échantillons), Test ({len(dataset_test)} échantillons)")
+    return loader_train, loader_val, loader_test, noms_classes
 ```
 
+## class ModeleLightningTransferLearningImage(pl.LightningModule)
+Module PyTorch Lightning pour la classification d'images utilisant l'apprentissage par transfert.
+Permet d'utiliser des modèles pré-entraînés de `torchvision.models` (ex: VGG, ResNet, EfficientNet, ViT).
+Gèle les couches du backbone et remplace la tête de classification finale.
+Implémente les étapes d'entraînement, de validation, de test, et enregistre la perte & la précision.
+Inclut le calcul et l'affichage de la matrice de confusion à la fin de la phase de test.
+Utilisé dans les TP5, TP6, TP7.
+
+**Entrées (`__init__`) :**
+- `nom_modele_tv` (str) : Nom du modèle torchvision à utiliser (ex: "vgg16", "resnet50", "efficientnet_b0", "vit_b_16").
+- `nb_classes` (int) : Nombre de classes de sortie pour la nouvelle tâche.
+- `noms_classes` (list[str], optionnel) : Liste des noms de classes pour les étiquettes de la matrice de confusion. Requis si `tracer_matrice_confusion_test` est `True`.
+- `taux_apprentissage` (float, optionnel) : Taux d'apprentissage. Par défaut 3e-4.
+- `classe_optimiseur` (torch.optim.Optimizer, optionnel) : Classe d'optimiseur. Par défaut `optim.Adam`.
+- `poids_preentraines` (str ou `torchvision.models.WeightsEnum`, optionnel) : Poids pré-entraînés à utiliser.
+  "DEFAULT" utilise les meilleurs disponibles. `None` pour une initialisation aléatoire. Des énumérations de Poids spécifiques peuvent aussi être passées. Par défaut "DEFAULT".
+- `epoch_degel_backbone` (int, optionnel) : Époque à laquelle dégeler les couches du backbone. -1 pour les garder gelées. Par défaut -1.
+- `tracer_matrice_confusion_test` (bool, optionnel) : S'il faut tracer la matrice de confusion après le test. Par défaut `True`.
+
+**Sorties :**
+- (Implicitement) Gère l'entraînement, enregistre les métriques.
+
 ```python
-## class TransferLearningLightningModel(pl.LightningModule)
-# PyTorch Lightning module for image classification using transfer learning.
-# Allows using pre-trained models from torchvision.models (e.g., VGG, ResNet, EfficientNet, ViT).
-# Freezes backbone layers and replaces the final classifier head.
-# Implements training, validation, test steps, and logs loss & accuracy.
-# Includes confusion matrix calculation and plotting at the end of the test phase.
-# Used in TP5, TP6, TP7.
-
-# Entrées (__init__) :
-# - model_name (str): Name of the torchvision model to use (e.g., "vgg16", "resnet50", "efficientnet_b0", "vit_b_16").
-# - num_classes (int): Number of output classes for the new task.
-# - class_names (list of str, optional): List of class names for confusion matrix labels. Required if plot_confusion_matrix is True.
-# - learning_rate (float, optional): Learning rate. Defaults to 3e-4.
-# - optimizer_class (torch.optim.Optimizer, optional): Optimizer class. Defaults to optim.Adam.
-# - pretrained_weights (str or torchvision.models.WeightsEnum, optional): Pretrained weights to use.
-#   "DEFAULT" uses the best available. None for random initialization. Specific Weight enums can also be passed. Defaults to "DEFAULT".
-# - unfreeze_backbone_epoch (int, optional): Epoch at which to unfreeze backbone layers. -1 to keep frozen. Defaults to -1.
-# - plot_confusion_matrix_on_test (bool, optional): Whether to plot confusion matrix after test. Defaults to True.
-
-
-# Sorties :
-# - (Implicitly) Manages training, logs metrics.
-import pytorch_lightning as pl
-import torch
-import torch.nn as nn
-import torch.optim as optim
-import torchvision.models as models
-from torchmetrics.classification import MulticlassAccuracy, MulticlassConfusionMatrix
-import matplotlib.pyplot as plt
-import seaborn as sns
-import numpy as np
-import pandas as pd # For TP7 metrics from confusion matrix
-
-class TransferLearningLightningModel(pl.LightningModule):
-    def __init__(self, model_name: str, num_classes: int, class_names: list = None,
-                 learning_rate: float = 3e-4, optimizer_class=optim.Adam,
-                 pretrained_weights="DEFAULT", unfreeze_backbone_epoch: int = -1,
-                 plot_confusion_matrix_on_test: bool = True):
+class ModeleLightningTransferLearningImage(pl.LightningModule):
+    def __init__(self, nom_modele_tv: str, nb_classes: int, noms_classes: list = None,
+                 taux_apprentissage: float = 3e-4, classe_optimiseur=optim.Adam,
+                 poids_preentraines="DEFAULT", epoch_degel_backbone: int = -1, # -1 signifie ne jamais dégeler
+                 tracer_matrice_confusion_test: bool = True):
         super().__init__()
-        self.model_name = model_name
-        self.num_classes = num_classes
-        self.class_names = class_names if class_names else [str(i) for i in range(num_classes)]
-        self.lr = learning_rate
-        self.optimizer_class = optimizer_class
-        self.pretrained_weights = pretrained_weights
-        self.unfreeze_backbone_epoch = unfreeze_backbone_epoch
-        self.plot_confusion_matrix_on_test = plot_confusion_matrix_on_test
         
-        self.save_hyperparameters() # Saves all __init__ args
+        self.noms_classes = noms_classes if noms_classes else [str(i) for i in range(nb_classes)]
+        # Enregistrer les hyperparamètres pour la journalisation et les points de contrôle
+        self.save_hyperparameters() 
 
-        # Load pre-trained model
-        if hasattr(models, model_name):
-            model_func = getattr(models, model_name)
-            self.backbone = model_func(weights=self.pretrained_weights)
+        # Charger le modèle pré-entraîné
+        if hasattr(tv_models, nom_modele_tv):
+            fonction_modele = getattr(tv_models, nom_modele_tv)
+            # Utiliser l'API de poids si disponible (PyTorch 0.13+)
+            if isinstance(poids_preentraines, str) and poids_preentraines.upper() == "DEFAULT":
+                try: # Essayer d'obtenir les poids par défaut via l'API WeightsEnum
+                    nom_enum_poids = f"{nom_modele_tv.replace('_','').upper()}_Weights" # ex: VGG16_Weights
+                    if hasattr(tv_models, nom_enum_poids):
+                         poids_enum = getattr(tv_models, nom_enum_poids).DEFAULT
+                         self.backbone = fonction_modele(weights=poids_enum)
+                    else: # Fallback pour les modèles plus anciens ou si l'enum n'est pas trouvé
+                         self.backbone = fonction_modele(pretrained=True if poids_preentraines else False)
+                except AttributeError: # Si WeightsEnum n'existe pas pour ce modèle ou ancienne version de torchvision
+                     self.backbone = fonction_modele(pretrained=True if poids_preentraines else False)
+            elif poids_preentraines is None: # Pas de poids pré-entraînés
+                self.backbone = fonction_modele(weights=None, num_classes=nb_classes if nom_modele_tv.startswith("vit") else None) # ViT s'attend à num_classes à l'init
+                if not nom_modele_tv.startswith("vit"): # Pour les autres, modifier la tête après
+                    self._adapter_tete_classification(nom_modele_tv, nb_classes)
+
+            else: # Poids spécifiques (objet WeightsEnum) ou booléen (ancien API)
+                self.backbone = fonction_modele(weights=poids_preentraines)
         else:
-            raise ValueError(f"Model {model_name} not found in torchvision.models")
+            raise ValueError(f"Modèle {nom_modele_tv} introuvable dans torchvision.models")
 
-        # Freeze backbone parameters initially
-        for param in self.backbone.parameters():
-            param.requires_grad = False
+        # Geler les paramètres du backbone initialement si des poids pré-entraînés sont utilisés
+        if poids_preentraines:
+            for param in self.backbone.parameters():
+                param.requires_grad = False
+            # Adapter la tête de classification seulement si on utilise des poids pré-entraînés
+            # et que le modèle n'a pas été initialisé avec le bon nb_classes (cas non-ViT)
+            if not (nom_modele_tv.startswith("vit") and poids_preentraines is None):
+                self._adapter_tete_classification(nom_modele_tv, nb_classes)
 
-        # Replace classifier head
-        if "vgg" in model_name:
-            in_features = self.backbone.classifier[-1].in_features
-            self.backbone.classifier[-1] = nn.Linear(in_features, num_classes)
-        elif "resnet" in model_name or "resnext" in model_name or "wide_resnet" in model_name or "shufflenet" in model_name or "mobilenet" in model_name:
-            in_features = self.backbone.fc.in_features
-            self.backbone.fc = nn.Linear(in_features, num_classes)
-        elif "efficientnet" in model_name:
-            in_features = self.backbone.classifier[-1].in_features
-            self.backbone.classifier[-1] = nn.Linear(in_features, num_classes)
-        elif "vit" in model_name or "swin" in model_name: # Vision Transformer, Swin Transformer
-            if hasattr(self.backbone, 'heads') and isinstance(self.backbone.heads, nn.Sequential) and hasattr(self.backbone.heads, 'head'): # PyTorch 1.12+ ViT
-                 in_features = self.backbone.heads.head.in_features
-                 self.backbone.heads.head = nn.Linear(in_features, num_classes)
-            elif hasattr(self.backbone, 'head') and isinstance(self.backbone.head, nn.Linear): # Older ViT or other transformers
-                 in_features = self.backbone.head.in_features
-                 self.backbone.head = nn.Linear(in_features, num_classes)
-            else: # Fallback for models like ConvNeXt or if structure is unknown
-                # This is a guess; manual inspection might be needed for new models
-                # Try to find the last linear layer. Common names: 'classifier', 'fc', 'head'
-                potential_heads = ['classifier', 'fc', 'head']
-                found_head = False
-                for head_name in potential_heads:
-                    if hasattr(self.backbone, head_name):
-                        head_module = getattr(self.backbone, head_name)
-                        if isinstance(head_module, nn.Linear):
-                            in_features = head_module.in_features
-                            setattr(self.backbone, head_name, nn.Linear(in_features, num_classes))
-                            found_head = True
-                            break
-                        elif isinstance(head_module, nn.Sequential) and isinstance(head_module[-1], nn.Linear):
-                            in_features = head_module[-1].in_features
-                            head_module[-1] = nn.Linear(in_features, num_classes)
-                            found_head = True
-                            break
-                if not found_head:
-                    raise ValueError(f"Cannot automatically replace classifier for {model_name}. Please adapt.")
 
-        else:
-            raise ValueError(f"Classifier replacement for {model_name} not implemented. Please adapt.")
-
-        self.criterion = nn.CrossEntropyLoss()
-        self.train_accuracy = MulticlassAccuracy(num_classes=num_classes)
-        self.val_accuracy = MulticlassAccuracy(num_classes=num_classes)
-        self.test_accuracy = MulticlassAccuracy(num_classes=num_classes)
-        if self.plot_confusion_matrix_on_test:
-            self.test_confusion_matrix = MulticlassConfusionMatrix(num_classes=num_classes)
+        self.critere = nn.CrossEntropyLoss()
+        self.train_accuracy = MulticlassAccuracy(num_classes=nb_classes)
+        self.val_accuracy = MulticlassAccuracy(num_classes=nb_classes)
+        self.test_accuracy = MulticlassAccuracy(num_classes=nb_classes)
+        if self.hparams.tracer_matrice_confusion_test: # Utiliser hparams
+            self.test_confusion_matrix = MulticlassConfusionMatrix(num_classes=nb_classes)
         
-        self.confmat_for_metrics = None # To store confusion matrix for TP7 Q9
+        self.matrice_conf_pour_metriques = None # Pour stocker la matrice de confusion pour TP7 Q9
+
+    def _adapter_tete_classification(self, nom_modele, nb_classes_cible):
+        """Adapte la dernière couche linéaire du modèle pour le nb_classes_cible."""
+        if "vgg" in nom_modele or "alexnet" in nom_modele:
+            if hasattr(self.backbone, 'classifier') and isinstance(self.backbone.classifier, nn.Sequential) and len(self.backbone.classifier) > 0:
+                 num_ftrs = self.backbone.classifier[-1].in_features
+                 self.backbone.classifier[-1] = nn.Linear(num_ftrs, nb_classes_cible)
+            else: raise ValueError(f"Structure de classifieur inattendue pour {nom_modele}")
+        elif "resnet" in nom_modele or "resnext" in nom_modele or "wide_resnet" in nom_modele or \
+             "shufflenet" in nom_modele or "mobilenet" in nom_modele or "mnasnet" in nom_modele:
+            if hasattr(self.backbone, 'fc'):
+                num_ftrs = self.backbone.fc.in_features
+                self.backbone.fc = nn.Linear(num_ftrs, nb_classes_cible)
+            else: raise ValueError(f"Structure de classifieur inattendue pour {nom_modele} (fc manquant)")
+        elif "efficientnet" in nom_modele or "convnext" in nom_modele: # ConvNeXt aussi a .classifier
+            if hasattr(self.backbone, 'classifier') and isinstance(self.backbone.classifier, nn.Sequential) and len(self.backbone.classifier) > 0:
+                # EfficientNet a un Dropout puis un Linear dans classifier
+                if isinstance(self.backbone.classifier[-1], nn.Linear):
+                    num_ftrs = self.backbone.classifier[-1].in_features
+                    self.backbone.classifier[-1] = nn.Linear(num_ftrs, nb_classes_cible)
+                else: # Structure inattendue
+                     raise ValueError(f"Dernière couche du classifieur de {nom_modele} n'est pas Linear.")
+            else: raise ValueError(f"Structure de classifieur inattendue pour {nom_modele}")
+        elif "vit" in nom_modele_tv or "swin" in nom_modele_tv:
+            # Vision Transformer, Swin Transformer
+            # La tête est souvent appelée 'heads' ou 'head'
+            if hasattr(self.backbone, 'heads') and hasattr(self.backbone.heads, 'head') and isinstance(self.backbone.heads.head, nn.Linear):
+                num_ftrs = self.backbone.heads.head.in_features
+                self.backbone.heads.head = nn.Linear(num_ftrs, nb_classes_cible)
+            elif hasattr(self.backbone, 'head') and isinstance(self.backbone.head, nn.Linear):
+                num_ftrs = self.backbone.head.in_features
+                self.backbone.head = nn.Linear(num_ftrs, nb_classes_cible)
+            else:
+                raise ValueError(f"Impossible de remplacer automatiquement le classifieur pour {nom_modele_tv}. Veuillez adapter.")
+        elif "squeezenet" in nom_modele:
+            # SqueezeNet a un Conv2d final dans `classifier[1]`
+             if hasattr(self.backbone, 'classifier') and len(self.backbone.classifier) > 1 and isinstance(self.backbone.classifier[1], nn.Conv2d):
+                in_channels_final_conv = self.backbone.classifier[1].in_channels
+                # Remplacer par un Conv2d avec nb_classes_cible comme out_channels, kernel_size=1
+                self.backbone.classifier[1] = nn.Conv2d(in_channels_final_conv, nb_classes_cible, kernel_size=1)
+                # Il faut aussi s'assurer que la sortie est aplatie correctement après.
+                # Souvent, un AdaptiveAvgPool2d((1, 1)) est ajouté après le classifieur pour obtenir (batch, nb_classes, 1, 1)
+                # puis un flatten. Pour SqueezeNet, c'est déjà géré.
+             else: raise ValueError(f"Structure de classifieur inattendue pour {nom_modele}")
+        # Ajouter des cas pour d'autres familles de modèles si nécessaire
+        else:
+            print(f"Avertissement : Remplacement de classifieur non implémenté de manière spécifique pour {nom_modele_tv}. Tentative générique.")
+            # Tentative générique : trouver la dernière couche linéaire et la remplacer.
+            # Cela peut être risqué et nécessiter une inspection manuelle du modèle.
+            # Pour l'instant, on lève une erreur si non géré explicitement.
+            raise ValueError(f"Remplacement de classifieur non implémenté pour {nom_modele_tv}. Veuillez adapter _adapter_tete_classification.")
+
 
     def forward(self, x):
         return self.backbone(x)
 
-    def _shared_step(self, batch, stage: str):
+    def _etape_partagee(self, batch, phase: str):
         x, y = batch
         logits = self(x)
-        loss = self.criterion(logits, y)
+        perte = self.critere(logits, y)
         
-        acc_metric = getattr(self, f"{stage}_accuracy")
-        acc = acc_metric(logits, y)
+        metrique_acc = getattr(self, f"{phase}_accuracy")
+        acc = metrique_acc(logits, y)
         
-        self.log(f"{stage}_loss", loss, on_step=(stage=="train"), on_epoch=True, prog_bar=True)
-        self.log(f"{stage}_acc", acc, on_step=(stage=="train"), on_epoch=True, prog_bar=True)
+        self.log(f"{phase}_perte", perte, on_step=(phase=="train"), on_epoch=True, prog_bar=True)
+        self.log(f"{phase}_acc", acc, on_step=(phase=="train"), on_epoch=True, prog_bar=True)
         
-        if stage == "test" and self.plot_confusion_matrix_on_test:
-            self.test_confusion_matrix.update(logits, y)
+        if phase == "test" and self.hparams.tracer_matrice_confusion_test:
+            self.test_confusion_matrix.update(logits.argmax(dim=1), y) # Passer les prédictions (indices) et les vraies étiquettes
             
-        return loss
+        return perte
 
     def training_step(self, batch, batch_idx):
-        return self._shared_step(batch, "train")
+        return self._etape_partagee(batch, "train")
 
     def validation_step(self, batch, batch_idx):
-        return self._shared_step(batch, "val")
+        return self._etape_partagee(batch, "val")
 
     def test_step(self, batch, batch_idx):
-        return self._shared_step(batch, "test")
+        return self._etape_partagee(batch, "test")
 
     def on_train_epoch_start(self):
-        if self.unfreeze_backbone_epoch != -1 and self.current_epoch == self.unfreeze_backbone_epoch:
-            print(f"Unfreezing backbone at epoch {self.current_epoch}")
+        # Dégeler le backbone à une certaine époque si spécifié
+        if self.hparams.epoch_degel_backbone != -1 and self.current_epoch == self.hparams.epoch_degel_backbone:
+            print(f"Dégel du backbone à l'époque {self.current_epoch}")
             for param in self.backbone.parameters():
                 param.requires_grad = True
-            # Reconfigure optimizer or adjust learning rates for backbone
-            # For simplicity, often the same optimizer continues but with more params to train
-            # Or, re-initialize optimizer: self.trainer.optimizers = [self.configure_optimizers()['optimizer']]
-            # A common strategy is to use a lower LR for the backbone
+            # Il peut être nécessaire de reconfigurer l'optimiseur ou d'ajuster les taux d'apprentissage
+            # PTL le fait automatiquement si on change les paramètres qui require_grad.
+            # On peut aussi forcer une reconfiguration :
+            # self.trainer.strategy.setup_optimizers(self.trainer)
             
     def on_test_epoch_end(self):
-        if self.plot_confusion_matrix_on_test:
+        if self.hparams.tracer_matrice_confusion_test:
             cm = self.test_confusion_matrix.compute().cpu().numpy()
-            self.confmat_for_metrics = cm # Store for TP7 Q9
+            self.matrice_conf_pour_metriques = cm # Stocker pour TP7 Q9
 
-            fig, ax = plt.subplots(figsize=(max(6, self.num_classes), max(5, self.num_classes*0.8)))
+            fig, ax = plt.subplots(figsize=(max(6, self.hparams.nb_classes * 0.8), max(5, self.hparams.nb_classes * 0.6)))
             sns.heatmap(cm, annot=True, fmt='d', cmap='Blues', 
-                        xticklabels=self.class_names, yticklabels=self.class_names, ax=ax)
-            ax.set_xlabel('Predicted')
-            ax.set_ylabel('True')
-            ax.set_title('Confusion Matrix')
+                        xticklabels=self.hparams.noms_classes, yticklabels=self.hparams.noms_classes, ax=ax)
+            ax.set_xlabel('Prédit')
+            ax.set_ylabel('Vrai')
+            ax.set_title('Matrice de Confusion')
             plt.tight_layout()
             
-            # Log to wandb if logger is available
-            if self.logger and hasattr(self.logger.experiment, 'log'):
-                 self.logger.experiment.log({"test_confusion_matrix": wandb.Image(fig)})
+            # Enregistrer dans wandb si le logger est disponible
+            if self.logger and hasattr(self.logger.experiment, 'log') and isinstance(self.logger, WandbLogger):
+                 self.logger.experiment.log({"test_matrice_confusion": wandb.Image(fig)})
             plt.show()
-            self.test_confusion_matrix.reset() # Important to reset for next test run
+            self.test_confusion_matrix.reset() # Important pour les prochains tests
 
     def configure_optimizers(self):
-        # If unfreezing, you might want different LRs for backbone and head
-        # For now, simple optimizer for all trainable parameters
-        optimizer = self.optimizer_class(filter(lambda p: p.requires_grad, self.parameters()), lr=self.lr)
-        return optimizer
+        # Filtrer les paramètres pour n'inclure que ceux qui nécessitent des gradients
+        # Cela est important si on dégèle progressivement.
+        parametres_a_entrainer = filter(lambda p: p.requires_grad, self.parameters())
+        optimiseur = self.hparams.classe_optimiseur(parametres_a_entrainer, lr=self.hparams.taux_apprentissage)
+        return optimiseur
 
-    def calculate_classification_metrics_from_cm(self):
-        """Calculates precision, recall, F1 per class from self.confmat_for_metrics. (For TP7 Q9)"""
-        if self.confmat_for_metrics is None:
-            print("Confusion matrix not available. Run test phase first.")
+    def calculer_metriques_classification_depuis_mc(self):
+        """Calcule précision, rappel, F1 par classe à partir de self.matrice_conf_pour_metriques. (Pour TP7 Q9)"""
+        if self.matrice_conf_pour_metriques is None:
+            print("Matrice de confusion non disponible. Exécutez la phase de test d'abord.")
             return None
 
-        cm = self.confmat_for_metrics
-        num_classes = cm.shape[0]
-        metrics = {}
+        mc = self.matrice_conf_pour_metriques
+        nb_classes_mc = mc.shape[0]
+        metriques = {}
 
-        for i in range(num_classes):
-            tp = cm[i, i]
-            fp = np.sum(cm[:, i]) - tp
-            fn = np.sum(cm[i, :]) - tp
-            # tn = np.sum(cm) - tp - fp - fn # Not usually needed for per-class P/R/F1
-
-            precision = tp / (tp + fp) if (tp + fp) > 0 else 0
-            recall = tp / (tp + fn) if (tp + fn) > 0 else 0
-            f1 = 2 * (precision * recall) / (precision + recall) if (precision + recall) > 0 else 0
+        # Calculer par classe
+        for i in range(nb_classes_mc):
+            tp = mc[i, i]
+            fp = np.sum(mc[:, i]) - tp
+            fn = np.sum(mc[i, :]) - tp
             
-            class_name = self.class_names[i] if self.class_names and i < len(self.class_names) else f"Class_{i}"
-            metrics[class_name] = {"precision": precision, "recall": recall, "f1_score": f1}
+            precision = tp / (tp + fp) if (tp + fp) > 0 else 0.0
+            rappel = tp / (tp + fn) if (tp + fn) > 0 else 0.0
+            f1 = 2 * (precision * rappel) / (precision + rappel) if (precision + rappel) > 0 else 0.0
+            
+            nom_classe_mc = self.hparams.noms_classes[i] if self.hparams.noms_classes and i < len(self.hparams.noms_classes) else f"Classe_{i}"
+            metriques[nom_classe_mc] = {"precision": precision, "rappel": rappel, "f1_score": f1}
         
-        # Macro averages
-        avg_precision = np.mean([m['precision'] for m in metrics.values()])
-        avg_recall = np.mean([m['recall'] for m in metrics.values()])
-        avg_f1 = np.mean([m['f1_score'] for m in metrics.values()])
-        metrics['macro_average'] = {"precision": avg_precision, "recall": avg_recall, "f1_score": avg_f1}
+        # Moyennes macro
+        avg_precision = np.mean([m['precision'] for m in metriques.values()])
+        avg_rappel = np.mean([m['rappel'] for m in metriques.values()])
+        avg_f1 = np.mean([m['f1_score'] for m in metriques.values()])
+        metriques['macro_moyenne'] = {"precision": avg_precision, "rappel": avg_rappel, "f1_score": avg_f1}
         
-        # Micro average (accuracy)
-        total_tp = np.sum(np.diag(cm))
-        total_samples = np.sum(cm)
-        micro_f1_accuracy = total_tp / total_samples if total_samples > 0 else 0
-        metrics['micro_average_accuracy'] = micro_f1_accuracy
+        # Exactitude (Micro F1)
+        total_tp = np.sum(np.diag(mc))
+        total_echantillons = np.sum(mc)
+        exactitude_micro_f1 = total_tp / total_echantillons if total_echantillons > 0 else 0.0
+        metriques['exactitude_micro_f1'] = {"precision": exactitude_micro_f1, "rappel": exactitude_micro_f1, "f1_score": exactitude_micro_f1} # Remplir pour la cohérence du DataFrame
 
-        df_metrics = pd.DataFrame.from_dict(metrics, orient='index')
-        print("\nClassification Metrics per Class:")
-        print(df_metrics)
-        return df_metrics
+        df_metriques = pd.DataFrame.from_dict(metriques, orient='index')
+        print("\nIndicateurs de Classification par Classe:")
+        print(df_metriques)
+        return df_metriques
 ```
 
+## def visualiser_images_par_classe_depuis_chemin(chemin_dataset: str, nb_images_a_afficher: int = 5, taille_img_affichage: tuple = (128, 128))
+Affiche quelques exemples d'images de chaque classe d'un jeu de données structuré en sous-répertoires.
+Utilisé dans les TP5, TP6.
+
+**Entrées :**
+- `chemin_dataset` (str) : Chemin vers le répertoire racine du jeu de données (ex: "dataset/railway-construction-50/").
+- `nb_images_a_afficher` (int, optionnel) : Nombre maximum d'images à afficher par classe. Par défaut 5.
+- `taille_img_affichage` (tuple, optionnel) : Taille (largeur, hauteur) à laquelle redimensionner les images pour l'affichage. Par défaut (128, 128).
+
+**Sorties :**
+- Aucune (affiche les graphiques).
+
 ```python
-## def display_class_images_from_path(dataset_path: str, num_images_to_show: int = 5, img_size_display: tuple = (128, 128))
-# Displays a few sample images from each class in a dataset structured in subdirectories.
-# Used in TP5, TP6.
-
-# Entrées :
-# - dataset_path (str): Path to the root directory of the dataset (e.g., "dataset/railway-construction-50/").
-# - num_images_to_show (int, optional): Maximum number of images to display per class. Defaults to 5.
-# - img_size_display (tuple, optional): Size (width, height) to resize images for display. Defaults to (128, 128).
-
-# Sorties :
-# - None (displays the plots).
-import os
-import glob
-import matplotlib.pyplot as plt
-import matplotlib.image as mpimg # or from PIL import Image; img = Image.open(...)
-import cv2 # For resizing if mpimg is used and original TP code uses cv2.resize
-
-def display_class_images_from_path(dataset_path: str, num_images_to_show: int = 5, img_size_display: tuple = (128, 128)):
+def visualiser_images_par_classe_depuis_chemin(chemin_dataset: str, nb_images_a_afficher: int = 5, taille_img_affichage: tuple = (128, 128)):
     """
-    Displays a few sample images from each class subfolder in the dataset_path.
+    Affiche quelques exemples d'images de chaque sous-dossier de classe dans le chemin_dataset.
     """
-    if not os.path.isdir(dataset_path):
-        print(f"Error: Dataset path '{dataset_path}' not found or not a directory.")
+    if not os.path.isdir(chemin_dataset):
+        print(f"Erreur : Chemin du jeu de données '{chemin_dataset}' introuvable ou n'est pas un répertoire.")
         return
 
-    class_names = [d for d in os.listdir(dataset_path) if os.path.isdir(os.path.join(dataset_path, d))]
-    if not class_names:
-        print(f"No subdirectories (classes) found in '{dataset_path}'.")
+    noms_classes = [d for d in os.listdir(chemin_dataset) if os.path.isdir(os.path.join(chemin_dataset, d))]
+    if not noms_classes:
+        print(f"Aucun sous-répertoire (classe) trouvé dans '{chemin_dataset}'.")
         return
 
-    for class_name in class_names:
-        class_folder_path = os.path.join(dataset_path, class_name)
-        # Look for common image extensions
-        image_paths = []
-        for ext in ["*.jpg", "*.jpeg", "*.png", "*.bmp", "*.gif"]:
-            image_paths.extend(glob.glob(os.path.join(class_folder_path, ext)))
+    for nom_classe in noms_classes:
+        chemin_dossier_classe = os.path.join(chemin_dataset, nom_classe)
+        # Chercher les extensions d'images courantes
+        chemins_images = []
+        for ext in ["*.jpg", "*.jpeg", "*.png", "*.bmp", "*.gif"]: # Ajout de plus d'extensions
+            chemins_images.extend(glob.glob(os.path.join(chemin_dossier_classe, ext)))
         
-        if not image_paths:
-            print(f"No images found in class folder: {class_folder_path}")
+        if not chemins_images:
+            print(f"Aucune image trouvée dans le dossier de classe : {chemin_dossier_classe}")
             continue
 
-        print(f"\nDisplaying images for class: {class_name}")
+        print(f"\nAffichage des images pour la classe : {nom_classe}")
         
-        # Determine number of columns for subplot dynamically or fix it
-        num_cols = min(num_images_to_show, 5) # Max 5 columns
-        num_rows = (min(len(image_paths), num_images_to_show) + num_cols - 1) // num_cols
+        nb_colonnes = min(nb_images_a_afficher, 5) # Max 5 colonnes
+        nb_lignes = (min(len(chemins_images), nb_images_a_afficher) + nb_colonnes - 1) // nb_colonnes
 
-
-        plt.figure(figsize=(num_cols * 3, num_rows * 3)) # Adjust figsize based on cols/rows
+        plt.figure(figsize=(nb_colonnes * 3, nb_lignes * 3)) # Ajuster figsize
         
-        for i, img_path in enumerate(image_paths):
-            if i >= num_images_to_show:
+        for i, chemin_img in enumerate(chemins_images):
+            if i >= nb_images_a_afficher:
                 break
             
             try:
-                img = mpimg.imread(img_path) # Reads as numpy array
-                # Resize for display consistency (OpenCV is good for this)
-                img_resized = cv2.resize(img, img_size_display)
+                # Utiliser PIL pour ouvrir, puis convertir en tableau numpy pour cv2 si besoin
+                img_pil = Image.open(chemin_img).convert('RGB') # S'assurer que c'est RGB
+                img_np = np.array(img_pil)
                 
-                plt.subplot(num_rows, num_cols, i + 1)
-                plt.imshow(img_resized)
-                plt.title(os.path.basename(img_path)[:15]) # Shortened filename
+                # Redimensionner pour l'affichage (cv2 est efficace pour cela)
+                img_redimensionnee = cv2.resize(img_np, taille_img_affichage)
+                
+                plt.subplot(nb_lignes, nb_colonnes, i + 1)
+                plt.imshow(img_redimensionnee)
+                plt.title(os.path.basename(chemin_img)[:20]) # Nom de fichier raccourci
                 plt.axis('off')
             except Exception as e:
-                print(f"Could not load/display image {img_path}: {e}")
+                print(f"Impossible de charger/afficher l'image {chemin_img}: {e}")
         
         plt.tight_layout()
         plt.show()
 ```
 
+## def tracer_metriques_entrainement_depuis_csv(repertoire_logs: str, nom_logger_csv: str, version_logger_csv: str = '', nom_fichier_metriques: str = 'metrics.csv')
+Trace les courbes de perte/précision d'entraînement et de validation à partir d'un fichier `metrics.csv` généré par `CSVLogger` de PyTorch Lightning.
+Utilisé dans les TP5, TP6.
+
+**Entrées :**
+- `repertoire_logs` (str) : Le répertoire de base où les logs sont stockés (ex: "logs/").
+- `nom_logger_csv` (str) : Le 'nom' donné à `CSVLogger` (ex: "cnn1").
+- `version_logger_csv` (str, optionnel) : La 'version' donnée à `CSVLogger`. Par défaut ''.
+Si `CSVLogger` utilise des sous-répertoires comme 'version_0', 'version_1', l'inclure ici.
+- `nom_fichier_metriques` (str, optionnel) : Nom du fichier CSV des métriques. Par défaut 'metrics.csv'.
+
+**Sorties :**
+- Aucune (affiche les graphiques).
+
 ```python
-## def plot_training_metrics_from_csv(log_dir: str, csv_logger_name: str, csv_logger_version: str = '', metrics_filename: str = 'metrics.csv')
-# Plots training and validation loss/accuracy from a metrics.csv file generated by PyTorch Lightning's CSVLogger.
-# Used in TP5, TP6.
-
-# Entrées :
-# - log_dir (str): The base directory where logs are stored (e.g., "logs/").
-# - csv_logger_name (str): The 'name' given to CSVLogger (e.g., "cnn1").
-# - csv_logger_version (str, optional): The 'version' given to CSVLogger. Defaults to ''.
-#                                     If CSVLogger uses subdirectories like 'version_0', 'version_1', include it here.
-# - metrics_filename (str, optional): Name of the metrics CSV file. Defaults to 'metrics.csv'.
-
-# Sorties :
-# - None (displays the plots).
-import pandas as pd
-import matplotlib.pyplot as plt
-import os
-
-def plot_training_metrics_from_csv(log_dir: str, csv_logger_name: str, csv_logger_version: str = '', metrics_filename: str = 'metrics.csv'):
+def tracer_metriques_entrainement_depuis_csv(repertoire_logs: str, nom_logger_csv: str, version_logger_csv: str = '', nom_fichier_metriques: str = 'metrics.csv'):
     """
-    Plots training/validation loss and accuracy from CSVLogger's metrics file.
-    Assumes standard column names like 'epoch', 'train_loss_epoch', 'val_loss', 
-    'train_acc_epoch', 'val_acc'. Adjust if names differ.
+    Trace les courbes de perte et de précision d'entraînement/validation à partir du fichier metrics.csv de CSVLogger.
+    Suppose des noms de colonnes standard comme 'epoch', 'train_loss_epoch', 'val_loss', 
+    'train_acc_epoch', 'val_acc'. S'adapte si les noms diffèrent ('train_loss', 'train_acc').
     """
-    if csv_logger_version: # If version is specified (e.g. "version_0")
-        metrics_path = os.path.join(log_dir, csv_logger_name, csv_logger_version, metrics_filename)
-    else: # If version is empty, logger might save directly under csv_logger_name
-        metrics_path = os.path.join(log_dir, csv_logger_name, metrics_filename)
-
-    if not os.path.exists(metrics_path):
-        # Try another common structure if version is managed by PTL automatically (version_0, version_1, etc.)
-        # and user provides empty version string. We'll try to find the latest version.
-        potential_versions_path = os.path.join(log_dir, csv_logger_name)
-        if os.path.isdir(potential_versions_path):
-            versions = sorted([d for d in os.listdir(potential_versions_path) if d.startswith("version_") and os.path.isdir(os.path.join(potential_versions_path,d))])
+    chemin_metriques = ""
+    # Construire le chemin vers le fichier metrics.csv
+    if version_logger_csv: # Si la version est spécifiée (ex: "version_0")
+        chemin_metriques = os.path.join(repertoire_logs, nom_logger_csv, version_logger_csv, nom_fichier_metriques)
+    else: # Si la version est vide, le logger peut enregistrer directement sous nom_logger_csv
+          # Ou PTL peut créer un dossier "version_X" automatiquement.
+        chemin_base_logger = os.path.join(repertoire_logs, nom_logger_csv)
+        if os.path.exists(os.path.join(chemin_base_logger, nom_fichier_metriques)): # Cas simple
+            chemin_metriques = os.path.join(chemin_base_logger, nom_fichier_metriques)
+        elif os.path.isdir(chemin_base_logger): # Chercher la dernière version_X
+            versions = sorted([d for d in os.listdir(chemin_base_logger) if d.startswith("version_") and os.path.isdir(os.path.join(chemin_base_logger,d))])
             if versions:
-                 metrics_path = os.path.join(potential_versions_path, versions[-1], metrics_filename) # Use latest version
+                 chemin_metriques = os.path.join(chemin_base_logger, versions[-1], nom_fichier_metriques) # Utiliser la dernière version
 
-    if not os.path.exists(metrics_path):
-        print(f"Error: Metrics file not found at '{metrics_path}' or any auto-detected version path.")
-        print("Please check log_dir, csv_logger_name, and csv_logger_version.")
+    if not chemin_metriques or not os.path.exists(chemin_metriques):
+        print(f"Erreur : Fichier de métriques introuvable à '{chemin_metriques}' ou dans les versions auto-détectées.")
+        print("Veuillez vérifier repertoire_logs, nom_logger_csv et version_logger_csv.")
         return
 
     try:
-        df = pd.read_csv(metrics_path)
+        df = pd.read_csv(chemin_metriques)
     except Exception as e:
-        print(f"Error reading CSV file '{metrics_path}': {e}")
+        print(f"Erreur lors de la lecture du fichier CSV '{chemin_metriques}': {e}")
         return
 
-    # Identify epoch column, often just 'epoch'
-    epoch_col = 'epoch' if 'epoch' in df.columns else None
-    if not epoch_col:
-        print("Error: 'epoch' column not found in metrics.csv.")
+    # Identifier la colonne d'époque, souvent juste 'epoch'
+    col_epoch = 'epoch' if 'epoch' in df.columns else None
+    if not col_epoch:
+        print("Erreur : Colonne 'epoch' introuvable dans metrics.csv.")
         return
         
-    # Loss plot
-    train_loss_col = next((col for col in ['train_loss_epoch', 'train_loss'] if col in df.columns), None)
-    val_loss_col = next((col for col in ['val_loss_epoch', 'val_loss'] if col in df.columns), None)
+    # Graphique de la perte
+    # Essayer les noms de colonnes communs pour la perte
+    col_train_loss = next((col for col in ['train_loss_epoch', 'train_loss'] if col in df.columns), None)
+    col_val_loss = next((col for col in ['val_loss_epoch', 'val_loss'] if col in df.columns), None) # val_loss est plus courant que val_loss_epoch
 
-    if train_loss_col and val_loss_col:
-        train_df_loss = df[df[train_loss_col].notna()][[epoch_col, train_loss_col]].copy()
-        val_df_loss = df[df[val_loss_col].notna()][[epoch_col, val_loss_col]].copy()
-        # PTL might log val metrics less frequently, so forward fill epoch for val if needed for plotting alignment
-        # Or group by epoch and take mean if multiple steps per epoch logged for train
-        train_df_loss = train_df_loss.groupby(epoch_col).mean().reset_index()
-        val_df_loss = val_df_loss.groupby(epoch_col).mean().reset_index()
+    plt.figure(figsize=(12, 5)) # Créer une seule figure pour les deux subplots
 
+    if col_train_loss and col_val_loss:
+        # Nettoyer les NaN et agréger par époque (prendre la moyenne si plusieurs pas par époque)
+        df_train_loss = df[df[col_train_loss].notna()].groupby(col_epoch)[col_train_loss].mean().reset_index()
+        df_val_loss = df[df[col_val_loss].notna()].groupby(col_epoch)[col_val_loss].mean().reset_index()
 
-        plt.figure(figsize=(12, 5))
         plt.subplot(1, 2, 1)
-        plt.plot(train_df_loss[epoch_col], train_df_loss[train_loss_col], label='Train Loss', marker='o')
-        plt.plot(val_df_loss[epoch_col], val_df_loss[val_loss_col], label='Validation Loss', marker='x')
-        plt.xlabel('Epoch')
-        plt.ylabel('Loss')
-        plt.title('Training & Validation Loss')
+        plt.plot(df_train_loss[col_epoch], df_train_loss[col_train_loss], label='Perte Entraînement', marker='o')
+        plt.plot(df_val_loss[col_epoch], df_val_loss[col_val_loss], label='Perte Validation', marker='x')
+        plt.xlabel('Époque')
+        plt.ylabel('Perte')
+        plt.title('Perte Entraînement & Validation')
         plt.legend()
         plt.grid(True)
     else:
-        print("Warning: Loss columns not found for plotting.")
+        print("Avertissement : Colonnes de perte introuvables pour le traçage.")
 
-    # Accuracy plot
-    train_acc_col = next((col for col in ['train_acc_epoch', 'train_acc'] if col in df.columns), None)
-    val_acc_col = next((col for col in ['val_acc_epoch', 'val_acc'] if col in df.columns), None)
+    # Graphique de la précision
+    col_train_acc = next((col for col in ['train_acc_epoch', 'train_acc'] if col in df.columns), None)
+    col_val_acc = next((col for col in ['val_acc_epoch', 'val_acc'] if col in df.columns), None)
 
-    if train_acc_col and val_acc_col:
-        train_df_acc = df[df[train_acc_col].notna()][[epoch_col, train_acc_col]].copy()
-        val_df_acc = df[df[val_acc_col].notna()][[epoch_col, val_acc_col]].copy()
-        train_df_acc = train_df_acc.groupby(epoch_col).mean().reset_index()
-        val_df_acc = val_df_acc.groupby(epoch_col).mean().reset_index()
+    if col_train_acc and col_val_acc:
+        df_train_acc = df[df[col_train_acc].notna()].groupby(col_epoch)[col_train_acc].mean().reset_index()
+        df_val_acc = df[df[col_val_acc].notna()].groupby(col_epoch)[col_val_acc].mean().reset_index()
 
-        plt.subplot(1, 2, 2)
-        plt.plot(train_df_acc[epoch_col], train_df_acc[train_acc_col], label='Train Accuracy', marker='o')
-        plt.plot(val_df_acc[epoch_col], val_df_acc[val_acc_col], label='Validation Accuracy', marker='x')
-        plt.xlabel('Epoch')
-        plt.ylabel('Accuracy')
-        plt.title('Training & Validation Accuracy')
+        plt.subplot(1, 2, 2) # Le deuxième subplot
+        plt.plot(df_train_acc[col_epoch], df_train_acc[col_train_acc], label='Précision Entraînement', marker='o')
+        plt.plot(df_val_acc[col_epoch], df_val_acc[col_val_acc], label='Précision Validation', marker='x')
+        plt.xlabel('Époque')
+        plt.ylabel('Précision')
+        plt.title('Précision Entraînement & Validation')
         plt.legend()
         plt.grid(True)
     else:
-        print("Warning: Accuracy columns not found for plotting.")
-        if not (train_loss_col and val_loss_col): # If no plots were made at all
-            return # exit
+        print("Avertissement : Colonnes de précision introuvables pour le traçage.")
+        if not (col_train_loss and col_val_loss): # Si aucun graphique n'a été fait
+            plt.close() # Fermer la figure vide
+            return 
 
     plt.tight_layout()
     plt.show()
 ```
 
+## def generer_soumission_kaggle_csv(modele: nn.Module, chemin_dossier_test: str, taille_image: int, nom_fichier_csv_sortie: str = "submission.csv", chaine_device: str = "auto")
+Génère un fichier CSV pour une soumission Kaggle en prédisant les étiquettes pour les images d'un dossier de test.
+Le modèle est supposé être un modèle PyTorch. Des transformations sont appliquées aux images de test.
+Utilisé dans les TP5, TP6.
+
+**Entrées :**
+- `modele` (nn.Module) : Le modèle PyTorch entraîné (peut être un `LightningModule` ou un `nn.Module` brut).
+- `chemin_dossier_test` (str) : Chemin vers le dossier contenant les images de test. Suppose que les images sont directement dans ce dossier.
+- `taille_image` (int) : La taille (hauteur et largeur) à laquelle les images de test seront redimensionnées.
+- `nom_fichier_csv_sortie` (str, optionnel) : Nom du fichier CSV de sortie. Par défaut "submission.csv".
+- `chaine_device` (str, optionnel) : Device pour exécuter les prédictions ("cpu", "cuda", ou "auto"). Par défaut "auto".
+
+**Sorties :**
+- `df_soumission` (pd.DataFrame) : DataFrame contenant les ID d'images et les étiquettes prédites.
+- Enregistre `df_soumission` dans `nom_fichier_csv_sortie`.
+
 ```python
-## def generate_kaggle_submission_csv(model: nn.Module, test_data_folder_path: str, image_size: int, output_csv_filename: str = "submission.csv", device_str: str = "auto")
-# Generates a CSV file for Kaggle submission by predicting labels for images in a test folder.
-# The model is expected to be a PyTorch model. Transformations are applied to test images.
-# Used in TP5, TP6.
+from tqdm import tqdm # Pour la barre de progression
 
-# Entrées :
-# - model (nn.Module): The trained PyTorch model (can be a LightningModule or a raw nn.Module).
-# - test_data_folder_path (str): Path to the folder containing test images. Assumes images are directly in this folder.
-# - image_size (int): The size (height and width) to which test images will be resized.
-# - output_csv_filename (str, optional): Name of the output CSV file. Defaults to "submission.csv".
-# - device_str (str, optional): Device to run predictions on ("cpu", "cuda", or "auto"). Defaults to "auto".
-
-
-# Sorties :
-# - submission_df (pd.DataFrame): DataFrame containing image IDs and predicted labels.
-# - Saves the submission_df to `output_csv_filename`.
-import torch
-import torch.nn as nn
-import torchvision.transforms.v2 as transforms # Using v2
-from PIL import Image
-import os
-import pandas as pd
-from tqdm import tqdm
-
-def generate_kaggle_submission_csv(model: nn.Module, test_data_folder_path: str, image_size: int, output_csv_filename: str = "submission.csv", device_str: str = "auto"):
+def generer_soumission_kaggle_csv(modele: nn.Module, chemin_dossier_test: str, taille_image: int, nom_fichier_csv_sortie: str = "submission.csv", chaine_device: str = "auto"):
     """
-    Generates a Kaggle submission CSV file by predicting labels for images in a test folder.
+    Génère un fichier CSV de soumission Kaggle en prédisant les étiquettes pour les images d'un dossier de test.
     """
-    if device_str == "auto":
+    if chaine_device == "auto":
         device = torch.device("cuda" if torch.cuda.is_available() else "cpu")
     else:
-        device = torch.device(device_str)
+        device = torch.device(chaine_device)
     
-    model.to(device)
-    model.eval() # Set model to evaluation mode
+    modele.to(device)
+    modele.eval() # Mettre le modèle en mode évaluation
 
-    # Standard transformations for test images (consistent with eval_transform)
-    mean = [0.485, 0.456, 0.406] # Typical ImageNet mean
-    std = [0.229, 0.224, 0.225]  # Typical ImageNet std
+    # Transformations standard pour les images de test (cohérentes avec transform_eval)
+    moyenne_imagenet = [0.485, 0.456, 0.406] 
+    std_imagenet = [0.229, 0.224, 0.225]  
     
-    test_transform = transforms.Compose([
-        transforms.Resize(image_size + 32), # Resize to a bit larger then center crop, or just Resize(image_size)
-        transforms.CenterCrop(image_size),
-        transforms.PILToTensor(),
-        transforms.ToDtype(torch.float32, scale=True), # Converts to float and scales to [0,1]
-        transforms.Normalize(mean=mean, std=std)
+    transform_test = tv_transforms_v2.Compose([
+        tv_transforms_v2.Resize(taille_image + 32), 
+        tv_transforms_v2.CenterCrop(taille_image),
+        tv_transforms_v2.PILToTensor(),
+        tv_transforms_v2.ToDtype(torch.float32, scale=True), 
+        tv_transforms_v2.Normalize(mean=moyenne_imagenet, std=std_imagenet)
     ])
 
-    predictions = []
-    filenames = []
+    predictions_liste = []
+    noms_fichiers_liste = []
 
-    image_files = [f for f in os.listdir(test_data_folder_path) if os.path.isfile(os.path.join(test_data_folder_path, f)) 
-                   and f.lower().endswith(('.png', '.jpg', '.jpeg', '.bmp', '.gif'))]
+    # Lister uniquement les fichiers image
+    fichiers_images = [f for f in os.listdir(chemin_dossier_test) 
+                       if os.path.isfile(os.path.join(chemin_dossier_test, f)) and 
+                          f.lower().endswith(('.png', '.jpg', '.jpeg', '.bmp', '.gif'))]
 
-    if not image_files:
-        print(f"No image files found in {test_data_folder_path}")
+    if not fichiers_images:
+        print(f"Aucun fichier image trouvé dans {chemin_dossier_test}")
         return pd.DataFrame({'ID': [], 'Label': []})
 
-    for img_filename in tqdm(image_files, desc="Predicting test images"):
-        img_path = os.path.join(test_data_folder_path, img_filename)
+    for nom_fichier_img in tqdm(fichiers_images, desc="Prédiction des images de test"):
+        chemin_img = os.path.join(chemin_dossier_test, nom_fichier_img)
         try:
-            image = Image.open(img_path).convert('RGB') # Ensure 3 channels
-            image_tensor = test_transform(image).unsqueeze(0).to(device) # Add batch dimension and move to device
+            image_pil = Image.open(chemin_img).convert('RGB') # S'assurer qu'il y a 3 canaux
+            tenseur_image = transform_test(image_pil).unsqueeze(0).to(device) # Ajouter dimension batch et déplacer vers device
 
-            with torch.no_grad():
-                output_logits = model(image_tensor)
-                _, predicted_class_idx = torch.max(output_logits, 1) # Get index of max logit
+            with torch.no_grad(): # Pas besoin de gradients pour l'inférence
+                logits_sortie = modele(tenseur_image)
+                _, idx_classe_predite = torch.max(logits_sortie, 1) # Obtenir l'index du logit max
 
-            predictions.append(predicted_class_idx.item())
-            filenames.append(img_filename) # Kaggle usually wants the filename as ID
+            predictions_liste.append(idx_classe_predite.item())
+            noms_fichiers_liste.append(nom_fichier_img) # Kaggle veut souvent le nom de fichier comme ID
         except Exception as e:
-            print(f"Could not process image {img_path}: {e}")
-            # Optionally append a placeholder prediction or skip
-            # predictions.append(-1) # Placeholder for error
-            # filenames.append(img_filename)
+            print(f"Impossible de traiter l'image {chemin_img}: {e}")
+            # Optionnellement, ajouter une prédiction de remplacement ou ignorer
+            # predictions_liste.append(-1) # Remplacement pour erreur
+            # noms_fichiers_liste.append(nom_fichier_img)
 
-
-    submission_df = pd.DataFrame({
-        'ID': filenames,    # Or 'id' depending on Kaggle requirements
-        'Label': predictions # Or 'target', 'class', etc.
+    df_soumission = pd.DataFrame({
+        'ID': noms_fichiers_liste,    # Ou 'id' selon les exigences de Kaggle
+        'Label': predictions_liste # Ou 'target', 'class', etc.
     })
 
-    submission_df.to_csv(output_csv_filename, index=False)
-    print(f"Submission file '{output_csv_filename}' created successfully with {len(submission_df)} predictions.")
-    return submission_df
+    df_soumission.to_csv(nom_fichier_csv_sortie, index=False)
+    print(f"Fichier de soumission '{nom_fichier_csv_sortie}' créé avec succès avec {len(df_soumission)} prédictions.")
+    return df_soumission
 ```
 
+## def visualiser_patches_et_embeddings_vit(modele_vit: nn.Module, chemin_image: str, taille_image: int = 224)
+Visualise le processus d'intégration des patchs d'un modèle Vision Transformer (ViT).
+Elle montre :
+1. L'image originale.
+2. L'image divisée en patchs.
+3. La similarité des embeddings positionnels.
+Cette fonction est principalement destinée à la compréhension pédagogique du traitement d'entrée d'un ViT.
+Adapté du TP6.
+
+**Entrées :**
+- `modele_vit` (nn.Module) : Une instance d'un modèle ViT (ex: de `torchvision.models` ou un modèle personnalisé
+qui a `conv_proj`, `encoder.pos_embedding`, `class_token`).
+- `chemin_image` (str) : Chemin vers le fichier image d'entrée.
+- `taille_image` (int, optionnel) : Taille à laquelle redimensionner l'image. Par défaut 224.
+
+**Sorties :**
+- Aucune (affiche des graphiques).
+- Imprime les formes des tenseurs intermédiaires.
+
 ```python
-## def visualize_vit_patches_and_embeddings(vit_model: nn.Module, image_path: str, image_size: int = 224)
-# Visualizes the patch embedding process of a Vision Transformer (ViT) model.
-# It shows:
-# 1. The original image.
-# 2. The image divided into patches.
-# 3. The similarity of positional embeddings.
-# This function is primarily for educational understanding of ViT's input processing.
-# Adapted from TP6.
-
-# Entrées :
-# - vit_model (nn.Module): An instance of a ViT model (e.g., from torchvision.models or a custom one
-#                          that has `conv_proj`, `encoder.pos_embedding`, `class_token`).
-# - image_path (str): Path to the input image file.
-# - image_size (int, optional): Size to resize the image to. Defaults to 224.
-
-
-# Sorties :
-# - None (displays plots).
-# - Prints shapes of intermediate tensors.
-import torch
-import torch.nn as nn
-import torchvision.transforms.v2 as transforms # Using v2
-from PIL import Image
-import matplotlib.pyplot as plt
-import numpy as np
-import cv2 # For image manipulation in plots
-
-def visualize_vit_patches_and_embeddings(vit_model_instance: nn.Module, image_path: str, image_size: int = 224):
+def visualiser_patches_et_embeddings_vit(instance_modele_vit: nn.Module, chemin_image: str, taille_image: int = 224):
     """
-    Visualizes patch embedding and positional embedding similarity for a ViT model.
-    Assumes vit_model_instance is a PyTorch ViT model (e.g., from torchvision or similar structure).
+    Visualise l'intégration des patchs et la similarité des embeddings positionnels pour un modèle ViT.
+    Suppose que instance_modele_vit est un modèle ViT PyTorch (ex: de torchvision ou structure similaire).
     """
-    if not (hasattr(vit_model_instance, 'conv_proj') and 
-            hasattr(vit_model_instance, 'encoder') and 
-            hasattr(vit_model_instance.encoder, 'pos_embedding') and
-            hasattr(vit_model_instance, 'class_token')):
-        print("Warning: The provided model doesn't seem to have the expected ViT attributes "
-              "('conv_proj', 'encoder.pos_embedding', 'class_token'). Visualization might fail or be inaccurate.")
-        # return # Or try to proceed cautiously
+    # Vérifier si le modèle a les attributs attendus d'un ViT de torchvision
+    conv_proj_attr = getattr(instance_modele_vit, 'conv_proj', None)
+    encoder_attr = getattr(instance_modele_vit, 'encoder', None)
+    pos_embedding_attr = getattr(encoder_attr, 'pos_embedding', None) if encoder_attr else None
+    class_token_attr = getattr(instance_modele_vit, 'class_token', None)
 
-    # --- 1. Load and transform image ---
+    if not (conv_proj_attr and pos_embedding_attr and class_token_attr):
+        print("Avertissement : Le modèle fourni ne semble pas avoir les attributs ViT attendus "
+              "('conv_proj', 'encoder.pos_embedding', 'class_token'). La visualisation pourrait échouer ou être inexacte.")
+        # return # Ou essayer de continuer avec prudence
+
+    # --- 1. Charger et transformer l'image ---
     try:
-        img_pil = Image.open(image_path).convert('RGB')
+        img_pil = Image.open(chemin_image).convert('RGB')
     except FileNotFoundError:
-        print(f"Error: Image not found at {image_path}")
+        print(f"Erreur : Image introuvable à {chemin_image}")
         return
 
-    # Transformation for ViT input
-    transform_to_tensor = transforms.Compose([
-        transforms.Resize((image_size, image_size)), # Resize
-        transforms.PILToTensor(),
-        transforms.ToDtype(torch.float32, scale=True), # To float tensor [0,1]
-        # ViT models in torchvision often have their own normalization or expect [0,1]
-        # If using a specific pretrained ViT, check its required normalization
-        # transforms.Normalize(mean=[0.485, 0.456, 0.406], std=[0.229, 0.224, 0.225])
+    # Transformation pour l'entrée ViT
+    transform_vers_tenseur = tv_transforms_v2.Compose([
+        tv_transforms_v2.Resize((taille_image, taille_image)), 
+        tv_transforms_v2.PILToTensor(),
+        tv_transforms_v2.ToDtype(torch.float32, scale=True), # Tenseur float [0,1]
+        # Les modèles ViT dans torchvision s'attendent souvent à une normalisation spécifique si pré-entraînés sur ImageNet
+        # tv_transforms_v2.Normalize(mean=[0.485, 0.456, 0.406], std=[0.229, 0.224, 0.225])
     ])
-    img_tensor_transformed = transform_to_tensor(img_pil).unsqueeze(0) # Add batch dimension
+    img_tenseur_transforme = transform_vers_tenseur(img_pil).unsqueeze(0) # Ajouter dimension batch
     
-    print(f"Original Image PIL size: {img_pil.size}")
-    print(f"Transformed Image Tensor shape: {img_tensor_transformed.shape}")
+    print(f"Taille Image PIL Originale : {img_pil.size}")
+    print(f"Forme Tenseur Image Transformée : {img_tenseur_transforme.shape}")
 
-    # --- 2. Patch Embedding ---
-    # Ensure model is in eval mode for consistency, though not strictly necessary for this part
-    vit_model_instance.eval() 
+    # --- 2. Intégration des Patchs ---
+    instance_modele_vit.eval() 
     with torch.no_grad():
-        # `conv_proj` is typical for PyTorch's ViT: Conv2d(3, embed_dim, kernel_size=patch_size, stride=patch_size)
-        if hasattr(vit_model_instance, 'conv_proj'):
-            patch_embeddings_conv = vit_model_instance.conv_proj(img_tensor_transformed) # Shape: [1, embed_dim, num_patches_h, num_patches_w]
-            print(f"Patch Embeddings (after conv_proj) shape: {patch_embeddings_conv.shape}")
+        if conv_proj_attr:
+            # `conv_proj` est typique pour le ViT de PyTorch : Conv2d(3, dim_embed, kernel_size=taille_patch, stride=taille_patch)
+            embeddings_patch_conv = conv_proj_attr(img_tenseur_transforme) # Forme : [1, dim_embed, nb_patches_h, nb_patches_w]
+            print(f"Embeddings de Patch (après conv_proj) forme : {embeddings_patch_conv.shape}")
             
-            # For visualization, we need patch size. Infer from conv_proj
-            patch_size_h = vit_model_instance.conv_proj.kernel_size[0]
-            patch_size_w = vit_model_instance.conv_proj.kernel_size[1]
-            num_patches_h = image_size // patch_size_h
-            num_patches_w = image_size // patch_size_w
-            print(f"Inferred patch size: ({patch_size_h}x{patch_size_w}), Num patches: ({num_patches_h}x{num_patches_w})")
+            # Pour la visualisation, nous avons besoin de la taille du patch. Inférer de conv_proj
+            taille_patch_h = conv_proj_attr.kernel_size[0]
+            taille_patch_w = conv_proj_attr.kernel_size[1]
+            nb_patches_h = taille_image // taille_patch_h
+            nb_patches_w = taille_image // taille_patch_w
+            print(f"Taille de patch inférée : ({taille_patch_h}x{taille_patch_w}), Nb patches : ({nb_patches_h}x{nb_patches_w})")
         else:
-            print("Model does not have 'conv_proj'. Skipping patch embedding visualization details.")
+            print("Modèle n'a pas 'conv_proj'. Passage des détails de visualisation de l'intégration des patchs.")
             return
 
-
-    # --- 3. Visualize Patches on Original Image ---
-    img_display_np = np.array(img_pil.resize((image_size, image_size))) # For display
+    # --- 3. Visualiser les Patchs sur l'Image Originale ---
+    img_affichage_np = np.array(img_pil.resize((taille_image, taille_image))) # Pour l'affichage
 
     fig_patches = plt.figure(figsize=(8, 8))
-    fig_patches.suptitle("Image Divided into Patches", fontsize=16)
-    for i in range(num_patches_h * num_patches_w):
-        row = i // num_patches_w
-        col = i % num_patches_w
+    fig_patches.suptitle("Image Divisée en Patchs", fontsize=16)
+    for i in range(nb_patches_h * nb_patches_w):
+        ligne = i // nb_patches_w
+        col = i % nb_patches_w
         
-        patch = img_display_np[row*patch_size_h:(row+1)*patch_size_h, col*patch_size_w:(col+1)*patch_size_w]
+        patch = img_affichage_np[ligne*taille_patch_h:(ligne+1)*taille_patch_h, col*taille_patch_w:(col+1)*taille_patch_w]
         
-        ax = fig_patches.add_subplot(num_patches_h, num_patches_w, i + 1)
+        ax = fig_patches.add_subplot(nb_patches_h, nb_patches_w, i + 1)
         ax.imshow(patch)
         ax.axis('off')
-    plt.tight_layout(rect=[0, 0, 1, 0.96]) # Adjust for suptitle
+    plt.tight_layout(rect=[0, 0, 1, 0.96]) 
     plt.show()
 
-    # --- 4. Positional Embeddings ---
-    if hasattr(vit_model_instance, 'encoder') and hasattr(vit_model_instance.encoder, 'pos_embedding'):
-        pos_embed = vit_model_instance.encoder.pos_embedding # Shape: [1, num_patches + 1, embed_dim] (+1 for class token)
-        print(f"Positional Embeddings shape: {pos_embed.shape}")
+    # --- 4. Embeddings Positionnels ---
+    if pos_embedding_attr is not None:
+        embed_pos = pos_embedding_attr # Forme : [1, nb_patches + 1, dim_embed] (+1 pour class token)
+        print(f"Embeddings Positionnels forme : {embed_pos.shape}")
 
-        # Visualize similarity of positional embeddings (excluding class token's embedding)
-        # pos_embed_patches = pos_embed[0, 1:, :] # Exclude class token
-        # num_patches_total = pos_embed_patches.shape[0]
-        
-        # This part assumes num_patches_h * num_patches_w == num_patches_total
-        # which holds if pos_embed corresponds to the grid
-        if num_patches_h * num_patches_w == pos_embed.shape[1] -1 : # Check if grid matches pos_embed
-            pos_embed_patches = pos_embed[0, 1:, :] # Exclude class token
+        # Visualiser la similarité des embeddings positionnels (excluant l'embedding du class token)
+        if nb_patches_h * nb_patches_w == embed_pos.shape[1] - 1 : # Vérifier si la grille correspond aux dimensions de l'embed_pos
+            embed_pos_patches = embed_pos[0, 1:, :] # Exclure class token
             
-            fig_pos_sim = plt.figure(figsize=(10, 10))
-            fig_pos_sim.suptitle("Positional Embedding Similarities to Others", fontsize=16)
+            fig_pos_sim = plt.figure(figsize=(min(12, nb_patches_w*0.8), min(12, nb_patches_h*0.8))) # Taille dynamique
+            fig_pos_sim.suptitle("Similarités des Embeddings Positionnels", fontsize=16)
             
-            # Plot cosine similarity of each patch's pos_embed to all other patch pos_embeds
-            for i in range(num_patches_h * num_patches_w):
-                # Cosine similarity of i-th patch pos_embed with all patch pos_embeds
-                sim_matrix = F.cosine_similarity(pos_embed_patches[i:i+1, :], pos_embed_patches, dim=1)
-                sim_matrix_reshaped = sim_matrix.reshape((num_patches_h, num_patches_w)).detach().cpu().numpy()
+            # Tracer la similarité cosinus de l'embed_pos de chaque patch avec tous les autres embed_pos de patchs
+            for i in range(nb_patches_h * nb_patches_w):
+                matrice_sim = F.cosine_similarity(embed_pos_patches[i:i+1, :], embed_pos_patches, dim=1)
+                matrice_sim_redim = matrice_sim.reshape((nb_patches_h, nb_patches_w)).detach().cpu().numpy()
                 
-                ax = fig_pos_sim.add_subplot(num_patches_h, num_patches_w, i + 1)
-                ax.imshow(sim_matrix_reshaped, cmap='viridis')
-                ax.set_title(f"Patch {i}", fontsize=8)
+                ax = fig_pos_sim.add_subplot(nb_patches_h, nb_patches_w, i + 1)
+                ax.imshow(matrice_sim_redim, cmap='viridis')
+                # ax.set_title(f"Patch {i}", fontsize=8) # Peut rendre le graphique chargé
                 ax.axis('off')
             plt.tight_layout(rect=[0, 0, 1, 0.96])
             plt.show()
         else:
-            print("Number of patches from image division does not match positional embedding dimensions. Skipping similarity plot.")
-
+            print("Le nombre de patches de la division d'image ne correspond pas aux dimensions des embeddings positionnels. Passage du graphique de similarité.")
     else:
-        print("Model does not have 'encoder.pos_embedding'. Skipping positional embedding visualization.")
+        print("Modèle n'a pas 'encoder.pos_embedding'. Passage de la visualisation des embeddings positionnels.")
 
-
-    # --- 5. Combine Patches with Positional Embeddings (Conceptual from TP) ---
-    if hasattr(vit_model_instance, 'conv_proj') and \
-       hasattr(vit_model_instance, 'class_token') and \
-       hasattr(vit_model_instance.encoder, 'pos_embedding'):
+    # --- 5. Combiner les Patchs avec les Embeddings Positionnels (Conceptuel du TP) ---
+    if conv_proj_attr and class_token_attr and pos_embedding_attr:
+        # Les patchs sont [1, dim_embed, nb_patches_h, nb_patches_w]
+        # Aplatir et permuter en [1, nb_patches_h*nb_patches_w, dim_embed]
+        patches_aplatis = embeddings_patch_conv.flatten(2).transpose(1, 2) 
         
-        # Patches are [1, embed_dim, num_patches_h, num_patches_w]
-        # Flatten and permute to [1, num_patches_h*num_patches_w, embed_dim]
-        patches_flattened = patch_embeddings_conv.flatten(2).transpose(1, 2) 
+        token_cls = class_token_attr # Forme : [1, 1, dim_embed]
         
-        cls_token = vit_model_instance.class_token # Shape: [1, 1, embed_dim]
+        # Concaténer le class token avec les embeddings de patchs
+        entree_transformer_sans_pos = torch.cat((token_cls, patches_aplatis), dim=1) # Forme [1, nb_patches+1, dim_embed]
+        print(f"Entrée Transformer (token CLS + patchs aplatis) forme : {entree_transformer_sans_pos.shape}")
         
-        # Concatenate class token with patch embeddings
-        transformer_input_no_pos = torch.cat((cls_token, patches_flattened), dim=1) # Shape [1, num_patches+1, embed_dim]
-        print(f"Transformer Input (CLS token + flattened patches) shape: {transformer_input_no_pos.shape}")
-        
-        # Add positional embeddings
-        # pos_embed is [1, num_patches+1, embed_dim]
-        if transformer_input_no_pos.shape == pos_embed.shape:
-            transformer_input_with_pos = transformer_input_no_pos + pos_embed
-            print(f"Transformer Input (with positional embeddings) shape: {transformer_input_with_pos.shape}")
+        # Ajouter les embeddings positionnels
+        # embed_pos est [1, nb_patches+1, dim_embed]
+        if entree_transformer_sans_pos.shape == embed_pos.shape:
+            entree_transformer_avec_pos = entree_transformer_sans_pos + embed_pos
+            print(f"Entrée Transformer (avec embeddings positionnels) forme : {entree_transformer_avec_pos.shape}")
         else:
-            print(f"Shape mismatch: Input without pos_embed {transformer_input_no_pos.shape} vs pos_embed {pos_embed.shape}")
+            print(f"Incohérence de forme : Entrée sans embed_pos {entree_transformer_sans_pos.shape} vs embed_pos {embed_pos.shape}")
 
-# Example (requires a ViT model and an image):
-# vit_b16_model = models.vit_b_16(weights=models.ViT_B_16_Weights.DEFAULT)
-# dummy_image_path = "path_to_your_sample_image.jpg" # Create a dummy image or use one from dataset
-# with open(dummy_image_path, 'wb') as f: # Create a dummy image if none exists
-#    f.write(os.urandom(1024)) # Minimal content, PIL might complain
+# Exemple (nécessite un modèle ViT et une image) :
+# modele_vit_b16 = tv_models.vit_b_16(weights=tv_models.ViT_B_16_Weights.DEFAULT)
+# chemin_image_factice = "chemin_vers_votre_image_exemple.jpg"
 # try:
-#    Image.new('RGB', (224, 224)).save(dummy_image_path) # A proper blank image
-#    visualize_vit_patches_and_embeddings(vit_b16_model, dummy_image_path)
+#    Image.new('RGB', (224, 224)).save(chemin_image_factice) # Une image blanche correcte
+#    visualiser_patches_et_embeddings_vit(modele_vit_b16, chemin_image_factice)
 # except Exception as e:
-#    print(f"Error in ViT visualization example: {e}")
+#    print(f"Erreur dans l'exemple de visualisation ViT : {e}")
 ```
 
+## def benchmarker_modele_pytorch(modele: nn.Module, forme_entree_exemple: tuple = (1, 3, 224, 224), gpu_uniquement: bool = True, chaine_device: str = "auto")
+Évalue un modèle PyTorch pour diverses métriques de performance telles que le temps d'inférence, l'utilisation de la mémoire, les FLOPs, etc.
+Utilise la librairie `pytorch_bench` (supposée installée).
+Extrait du TP6.
+
+**Entrées :**
+- `modele` (nn.Module) : Le modèle PyTorch à évaluer.
+- `forme_entree_exemple` (tuple, optionnel) : Forme d'un tenseur d'entrée exemple (Batch, Canaux, Hauteur, Largeur).
+  Par défaut (1, 3, 224, 224).
+- `gpu_uniquement` (bool, optionnel) : Si `True`, exécute le benchmark uniquement sur GPU (si disponible). Passé à `pytorch_bench.benchmark`.
+  Par défaut `True`.
+- `chaine_device` (str, optionnel) : Device sur lequel créer l'entrée exemple ("cpu", "cuda", "auto"). Par défaut "auto".
+
+**Sorties :**
+- `resultats` (dict ou type pertinent de `pytorch_bench`) : Résultats du benchmark.
+- Affiche les résultats.
+
 ```python
-## def benchmark_pytorch_model(model: nn.Module, example_input_shape: tuple = (1, 3, 224, 224), gpu_only: bool = True, device_str: str = "auto")
-# Benchmarks a PyTorch model for various performance metrics like inference time, memory usage, FLOPs etc.
-# Uses the `pytorch_bench` library (assumed to be installed).
-# From TP6.
+# Assurez-vous que pytorch_bench est installé : pip install pytorch-bench
+# Si l'import échoue, la fonction affichera un message d'erreur.
 
-# Entrées :
-# - model (nn.Module): The PyTorch model to benchmark.
-# - example_input_shape (tuple, optional): Shape of an example input tensor (Batch, Channels, Height, Width).
-#   Defaults to (1, 3, 224, 224).
-# - gpu_only (bool, optional): If True, run benchmark only on GPU (if available). Passed to `pytorch_bench.benchmark`.
-#   Defaults to True.
-# - device_str (str, optional): Device to create example input on ("cpu", "cuda", "auto"). Defaults to "auto".
-
-
-# Sorties :
-# - results (dict or relevant type from pytorch_bench): Benchmark results.
-# - Prints the results.
-import torch
-import torch.nn as nn
-# from pytorch_bench import benchmark # Assuming this is installed
-
-def benchmark_pytorch_model(model: nn.Module, example_input_shape: tuple = (1, 3, 224, 224), gpu_only: bool = True, device_str: str = "auto"):
+def benchmarker_modele_pytorch(modele: nn.Module, forme_entree_exemple: tuple = (1, 3, 224, 224), gpu_uniquement: bool = True, chaine_device: str = "auto"):
     """
-    Benchmarks a PyTorch model using the pytorch_bench library.
-    Ensure pytorch_bench is installed: pip install pytorch-bench
+    Évalue un modèle PyTorch en utilisant la librairie pytorch_bench.
+    Assurez-vous que pytorch_bench est installé : pip install pytorch-bench
     """
     try:
-        from pytorch_bench import benchmark as run_benchmark
+        from pytorch_bench import benchmark as executer_benchmark
     except ImportError:
-        print("Error: pytorch_bench library not found. Please install it: pip install pytorch-bench")
-        print("Skipping benchmark.")
+        print("Erreur : Librairie pytorch_bench introuvable. Veuillez l'installer : pip install pytorch-bench")
+        print("Passage du benchmark.")
         return None
 
-    if device_str == "auto":
+    if chaine_device == "auto":
         device = torch.device("cuda" if torch.cuda.is_available() else "cpu")
     else:
-        device = torch.device(device_str)
+        device = torch.device(chaine_device)
 
-    if gpu_only and device.type == 'cpu':
-        print("GPU not available, but gpu_only=True. Skipping benchmark or running on CPU if pytorch_bench handles it.")
-        # pytorch_bench might run on CPU if GPU is not found, even if gpu_only=True.
-        # Or, you might want to explicitly skip:
-        # return None 
+    if gpu_uniquement and device.type == 'cpu':
+        print("GPU non disponible, mais gpu_uniquement=True. Passage du benchmark ou exécution sur CPU si pytorch_bench le gère.")
+        # return None # Décommenter pour sauter explicitement si GPU non dispo et requis
 
-    model.to(device)
-    model.eval() # Ensure model is in eval mode
+    modele.to(device)
+    modele.eval() # S'assurer que le modèle est en mode évaluation
 
-    # Create example input tensor on the correct device
-    example_input = torch.randn(example_input_shape).to(device)
+    # Créer un tenseur d'entrée exemple sur le bon device
+    entree_exemple = torch.randn(forme_entree_exemple).to(device)
 
-    print(f"Benchmarking model {model.__class__.__name__} on {device.type.upper()} with input shape {example_input_shape}...")
+    print(f"Benchmarking du modèle {modele.__class__.__name__} sur {device.type.upper()} avec forme d'entrée {forme_entree_exemple}...")
     
     try:
-        # The `benchmark` function from `pytorch_bench` might have specific arguments.
-        # The TP shows `gpu_only=True`. Check library docs for exact signature if issues arise.
-        results = run_benchmark(model, example_input, gpu_only=(gpu_only and device.type=='cuda')) # Pass gpu_only based on actual device
-        print("\nBenchmark Results:")
-        # `results` format depends on pytorch_bench; typically a dict or custom object
-        if isinstance(results, dict):
-            for key, value in results.items():
-                print(f"  {key}: {value}")
+        # La fonction `benchmark` de `pytorch_bench` peut avoir des arguments spécifiques.
+        # Le TP montre `gpu_only=True`. Vérifiez la doc de la librairie pour la signature exacte si des problèmes surviennent.
+        resultats = executer_benchmark(modele, entree_exemple, gpu_only=(gpu_uniquement and device.type=='cuda'))
+        print("\nRésultats du Benchmark:")
+        # Le format de `resultats` dépend de pytorch_bench ; typiquement un dict ou un objet personnalisé
+        if isinstance(resultats, dict):
+            for cle, valeur in resultats.items():
+                print(f"  {cle}: {valeur}")
         else:
-            print(results)
-        return results
+            print(resultats)
+        return resultats
     except Exception as e:
-        print(f"Error during benchmarking: {e}")
+        print(f"Erreur pendant le benchmarking : {e}")
         return None
 
-# Example (commented out, requires a model):
-# my_cnn_model = models.resnet18() 
-# benchmark_results = benchmark_pytorch_model(my_cnn_model)
+# Exemple (commenté, nécessite un modèle) :
+# modele_cnn_test = tv_models.resnet18() 
+# resultats_benchmark = benchmarker_modele_pytorch(modele_cnn_test)
 ```
 
+## def extraire_images_test_par_classe_depuis_dataloader(loader_test: DataLoader, nb_images_par_classe: int = 5) -> dict
+Extrait un nombre spécifié d'images de test (et leurs étiquettes/chemins si disponibles depuis le dataset)
+pour chaque classe à partir d'un `DataLoader` PyTorch.
+Utile pour l'analyse qualitative ou l'XAI.
+Extrait du TP7.
+
+**Entrées :**
+- `loader_test` (DataLoader) : `DataLoader` pour l'ensemble de test. Le dataset sous-jacent doit être
+un `ImageFolder` ou un `Subset` d'un `ImageFolder`.
+- `nb_images_par_classe` (int, optionnel) : Nombre d'images à extraire par classe. Par défaut 5.
+
+**Sorties :**
+- `images_par_classe_nom` (dict) : Un dictionnaire où les clés sont les noms de classes et les valeurs sont des listes de tuples.
+Chaque tuple : (tenseur_image, idx_etiquette_vraie, chemin_image_si_disponible).
+
 ```python
-## def get_test_images_by_class_from_dataloader(test_loader: DataLoader, num_images_per_class: int = 5) -> dict
-# Extracts a specified number of test images (and their labels/paths if available from dataset)
-# for each class from a PyTorch DataLoader.
-# Useful for qualitative analysis or XAI.
-# From TP7.
-
-# Entrées :
-# - test_loader (DataLoader): DataLoader for the test set. The underlying dataset should be
-#                             an ImageFolder or a Subset of an ImageFolder.
-# - num_images_per_class (int, optional): Number of images to extract per class. Defaults to 5.
-
-# Sorties :
-# - images_by_class (dict): A dictionary where keys are class names and values are lists of tuples.
-#                           Each tuple: (image_tensor, true_label_idx, image_path_if_available)
-from torch.utils.data import DataLoader, Subset
-import torchvision.datasets as datasets # To check instance type
 from collections import defaultdict
 
-def get_test_images_by_class_from_dataloader(test_loader: DataLoader, num_images_per_class: int = 5) -> dict:
+def extraire_images_test_par_classe_depuis_dataloader(loader_test: DataLoader, nb_images_par_classe: int = 5) -> dict:
     """
-    Extracts and organizes test images by class from a DataLoader.
-    Attempts to get image paths if the dataset is an ImageFolder.
+    Extrait et organise les images de test par classe à partir d'un DataLoader.
+    Tente d'obtenir les chemins des images si le dataset est un ImageFolder.
     """
-    # Initialize dictionary to store images by class index
-    # Using defaultdict for convenience
-    images_by_class_idx = defaultdict(list)
+    images_par_classe_idx = defaultdict(list) # Stocke par index de classe d'abord
     
-    # Determine class names and class_to_idx mapping
-    # This requires inspecting the dataset structure within the DataLoader
-    if hasattr(test_loader.dataset, 'dataset') and isinstance(test_loader.dataset.dataset, datasets.ImageFolder):
-        # Case: DataLoader wraps a Subset of an ImageFolder
-        original_dataset = test_loader.dataset.dataset
-        class_names = original_dataset.classes
-        class_to_idx = original_dataset.class_to_idx
-        is_imagefolder_subset = True
-        # We need subset indices to map back to original dataset samples for paths
-        subset_indices = test_loader.dataset.indices
-        
-        # Create a map from subset_idx to original_dataset_idx
-        # This is tricky if DataLoader shuffles. Assuming it doesn't for test_loader.
-        # If test_loader.sampler is RandomSampler or shuffle=True, this direct mapping is not reliable for paths.
-        # For simplicity, if shuffle is on, paths might not be correctly associated.
-        # TP7 code iterates through subset_indices directly. Let's try that.
-        
-    elif isinstance(test_loader.dataset, datasets.ImageFolder):
-        # Case: DataLoader wraps an ImageFolder directly
-        original_dataset = test_loader.dataset
-        class_names = original_dataset.classes
-        class_to_idx = original_dataset.class_to_idx
-        is_imagefolder_subset = False
-        subset_indices = list(range(len(original_dataset))) # All indices
+    # Déterminer les noms de classes et le mapping class_to_idx
+    dataset_original = None
+    indices_subset = None
+    est_subset_imagefolder = False
+
+    if hasattr(loader_test.dataset, 'dataset') and isinstance(loader_test.dataset.dataset, tv_datasets.ImageFolder):
+        dataset_original = loader_test.dataset.dataset
+        indices_subset = loader_test.dataset.indices # Indices du subset dans le dataset original
+        est_subset_imagefolder = True
+    elif isinstance(loader_test.dataset, tv_datasets.ImageFolder):
+        dataset_original = loader_test.dataset
+        indices_subset = list(range(len(dataset_original))) # Tous les indices
     else:
-        print("Warning: Dataset type not ImageFolder or Subset of ImageFolder. Cannot retrieve class names or paths automatically.")
-        # Fallback: use label indices as keys if class names are unknown
-        # We won't be able to get paths in this case.
-        class_names = None 
-        class_to_idx = None
-        is_imagefolder_subset = False # or unknown
+        print("Avertissement : Type de dataset non ImageFolder ou Subset d'ImageFolder. Noms de classes/chemins non récupérables.")
+        # On peut quand même essayer de collecter par index d'étiquette si besoin, mais sans noms/chemins.
+        # Pour cet exercice, on suppose qu'on a un ImageFolder pour avoir les noms/chemins.
+        return {} # Retourner vide si la structure n'est pas celle attendue
 
-    # Iterate through the DataLoader
-    # Note: Iterating through DataLoader is easier than managing indices if paths are not strictly needed
-    # or if the transform is complex.
-    # However, TP7's `explain_model` needs the path.
+    noms_classes = dataset_original.classes
     
-    collected_counts = defaultdict(int)
-    
-    # Iterate through the DataLoader once to collect images
-    # This assumes test_loader.shuffle is False (typical for test sets)
-    temp_storage = defaultdict(list)
-    for batch_images, batch_labels in test_loader:
-        for i in range(len(batch_images)):
-            img_tensor = batch_images[i]
-            label_idx = batch_labels[i].item()
-            
-            if collected_counts[label_idx] < num_images_per_class:
-                 # Path retrieval is complex here without original index from dataset.
-                 # For now, store (img_tensor, label_idx, None_for_path)
-                temp_storage[label_idx].append((img_tensor, label_idx, None)) # Path placeholder
-                collected_counts[label_idx] +=1
+    # Itérer sur les indices du subset pour accéder aux images et chemins originaux
+    compteurs_collectes = defaultdict(int)
+    for idx_original_dataset in indices_subset:
+        # Obtenir l'image transformée et l'étiquette
+        # dataset_original[idx] applique les transformations définies lors de la création du DataLoader/Dataset
+        # Mais ici, loader_test.dataset est déjà le Dataset transformé (SubsetAvecTransform)
+        # Donc, pour obtenir l'image transformée comme elle serait dans le batch :
+        # On doit trouver l'index correspondant dans loader_test.dataset (qui est le Subset transformé)
+        # C'est complexe. Il est plus simple d'itérer sur le DataLoader directement si on n'a pas besoin des chemins.
+        # Le code du TP7 pour `get_test_images_by_class` itère sur les indices du `Subset` pour récupérer les chemins.
+        # Refaisons cela.
         
-        # Check if we have enough images for all classes we've seen so far
-        # This logic might not get N images for *every* class if some classes are rare
-        # A better approach is to iterate over the dataset directly using indices if paths are needed.
-        # Let's refine based on TP7's `get_test_images_by_class` which iterates `subset_indices`.
+        # Si loader_test.dataset est notre SubsetAvecTransform:
+        #   loader_test.dataset.subset_original est le Subset de PIL Images
+        #   loader_test.dataset.subset_original.dataset est ImageFolder (PIL)
+        #   loader_test.dataset.subset_original.indices sont les indices dans ImageFolder
         
-    # Re-doing collection based on TP7's direct dataset iteration for path access
-    images_by_class_idx.clear() # Clear previous attempt
-    
-    if is_imagefolder_subset or (not is_imagefolder_subset and isinstance(original_dataset, datasets.ImageFolder)):
-        # Iterate through the indices of the test set
-        current_idx_in_subset = 0
-        for original_idx in subset_indices: # These are indices into `original_dataset`
-            if current_idx_in_subset >= test_loader.batch_size * len(test_loader) : # Avoid iterating too much if subset is smaller than full iteration
-                break
+        # Pour être cohérent avec le TP7 et obtenir les chemins :
+        # On suppose que loader_test.dataset est un objet qui a un attribut .dataset (ImageFolder) et .indices (pour Subset)
+        # Ce qui est le cas pour `Subset(ImageFolder(...))`
 
-            img_tensor, label_idx = original_dataset[original_idx] # This applies transform
-            path = original_dataset.samples[original_idx][0] if hasattr(original_dataset, 'samples') else None
+        # Cette approche est plus fiable pour les chemins :
+        if hasattr(loader_test.dataset, 'dataset') and hasattr(loader_test.dataset, 'indices'): # Pour Subset(ImageFolder)
+            base_ds = loader_test.dataset.dataset # L'ImageFolder original (images PIL)
+            subset_indices_in_base_ds = loader_test.dataset.indices
             
-            if len(images_by_class_idx[label_idx]) < num_images_per_class:
-                images_by_class_idx[label_idx].append((img_tensor, label_idx, path))
+            # On doit trouver quelles images du DataLoader correspondent à quels indices originaux
+            # C'est plus simple de juste prendre les premières images du DataLoader et d'essayer de retrouver le chemin si possible
+            # Le code du TP7 itère sur les indices du subset et récupère l'image transformée ET le chemin.
+            # C'est ce que nous allons faire.
             
-            current_idx_in_subset += 1
-            # Check if all classes have enough images
-            all_filled = True
-            # Check against actual classes present in the original_dataset
-            for known_label_idx in range(len(class_names if class_names else [])): 
-                if len(images_by_class_idx[known_label_idx]) < num_images_per_class:
-                    all_filled = False
+            # Réinitialiser la collecte pour cette approche plus précise
+            images_par_classe_idx.clear()
+            compteurs_collectes.clear()
+
+            for idx_dans_subset_original in range(len(subset_indices_in_base_ds)):
+                idx_global_imagefolder = subset_indices_in_base_ds[idx_dans_subset_original]
+                
+                # Obtenir l'image PIL et l'étiquette de l'ImageFolder
+                img_pil, etiquette_idx = base_ds[idx_global_imagefolder] 
+                chemin_img = base_ds.samples[idx_global_imagefolder][0]
+                
+                if compteurs_collectes[etiquette_idx] < nb_images_par_classe:
+                    # Appliquer la transformation d'évaluation manuellement ici car on prend l'image PIL
+                    # On a besoin de la transform_eval du DataLoader
+                    # Supposons que le DataLoader a été créé avec creer_dataloaders_classification_images
+                    # qui utilise transform_eval (défini localement dans cette fonction).
+                    # Pour une fonction générique, on devrait passer la transform.
+                    # Simplification : on va supposer que l'image du dataloader est déjà transformée.
+                    # Et on va essayer de prendre les chemins des PREMIERS éléments du dataloader.
+                    
+                    # Solution plus simple : itérer sur le dataloader, et si c'est un subset d'ImageFolder,
+                    # essayer de récupérer le chemin via l'index global.
+                    # Mais l'ordre du dataloader n'est pas garanti pour correspondre aux indices du subset de cette manière.
+                    
+                    # Compromis du TP7 : prendre l'image transformée directement du Dataset
+                    # et le chemin via .samples. Cela suppose que loader_test.dataset[i]
+                    # correspond à l'image transformée de base_ds.samples[loader_test.dataset.indices[i]].
+
+                    # L'image déjà transformée (issue de loader_test.dataset[idx_subset_transforme])
+                    # et son chemin (issue de base_ds.samples[idx_global_imagefolder])
+                    # Il faut un moyen de lier idx_subset_transforme à idx_global_imagefolder.
+                    # Si loader_test.dataset est SubsetAvecTransform(Subset(ImageFolder)), c'est un peu imbriqué.
+                    
+                    # L'approche du TP7 :
+                    # dataset = test_loader.dataset.dataset  # This is the ImageFolder dataset
+                    # subset_indices_tp7 = test_loader.dataset.indices  # These are the indices for our test subset
+                    # for idx_tp7 in subset_indices_tp7:
+                    #     path, label = dataset.samples[idx_tp7]
+                    #     img = dataset[idx_tp7][0] # Get the transformed image
+
+                    # On va émuler cela :
+                    img_transformee = loader_test.dataset[idx_dans_subset_original][0] # Appelle __getitem__ de SubsetAvecTransform
+                                                                            # qui appelle __getitem__ de Subset
+                                                                            # qui appelle __getitem__ de ImageFolder (PIL)
+                                                                            # puis applique la transform.
+                    
+                    images_par_classe_idx[etiquette_idx].append((img_transformee, etiquette_idx, chemin_img))
+                    compteurs_collectes[etiquette_idx] += 1
+
+                # Vérifier si toutes les classes ont assez d'images
+                if all(c >= nb_images_par_classe for c in compteurs_collectes.values()) and len(compteurs_collectes) == len(noms_classes):
                     break
-            if all_filled and class_names: # Ensure class_names is not None
-                break 
-    else: # Fallback to temp_storage if not ImageFolder (paths will be None)
-        images_by_class_idx = temp_storage
-
-
-    # Convert to dict with class names as keys if possible
-    final_images_by_class = {}
-    if class_names:
-        for label_idx, items_list in images_by_class_idx.items():
-            final_images_by_class[class_names[label_idx]] = items_list
-    else: # Use label index as key if class names are not known
-        final_images_by_class = dict(images_by_class_idx)
-        
-    print("\nExtracted test images by class:")
-    for c_name, images_list in final_images_by_class.items():
-        print(f"  Class '{c_name}': {len(images_list)} images")
-        # for img_tensor, label, path_str in images_list:
-        #     print(f"    Label: {label}, Path: {path_str if path_str else 'N/A'}")
+            break # Sortir de la boucle principale d'itération sur les indices du subset
+        else: # Cas où ce n'est pas un Subset d'ImageFolder
+            print("Structure de dataset non gérée pour l'extraction de chemins. Chemins seront None.")
+            # Fallback : itérer sur le loader et prendre les images sans chemins
+            for batch_imgs, batch_labels in loader_test:
+                for i in range(len(batch_imgs)):
+                    img_t = batch_imgs[i]
+                    label_i = batch_labels[i].item()
+                    if compteurs_collectes[label_i] < nb_images_par_classe:
+                        images_par_classe_idx[label_i].append((img_t, label_i, None))
+                        compteurs_collectes[label_i] += 1
+                if all(c >= nb_images_par_classe for c in compteurs_collectes.values()) and len(compteurs_collectes) >= len(noms_classes if noms_classes else []): # >= car on ne connaît pas toutes les classes
+                    break
             
-    return final_images_by_class
+
+
+    # Convertir en dict avec noms de classes comme clés
+    images_par_classe_nom = {}
+    if noms_classes:
+        for etiquette_idx, liste_items in images_par_classe_idx.items():
+            if etiquette_idx < len(noms_classes): # S'assurer que l'index est valide
+                images_par_classe_nom[noms_classes[etiquette_idx]] = liste_items
+            else:
+                print(f"Avertissement: Index d'étiquette {etiquette_idx} hors limites pour noms_classes.")
+    else: # Utiliser l'index d'étiquette comme clé si les noms de classes ne sont pas connus
+        images_par_classe_nom = dict(images_par_classe_idx)
+        
+    print("\nImages de test extraites par classe:")
+    for nom_c, liste_images in images_par_classe_nom.items():
+        print(f"  Classe '{nom_c}': {len(liste_images)} images")
+            
+    return images_par_classe_nom
+
 ```
 
+## def expliquer_modele_cnn_captum_torchcam(modele_cnn: nn.Module, tenseur_image_batch: torch.Tensor, idx_etiquette_vraie: int, noms_classes: list, nom_methode_xai: str, chemin_image_originale: str = None, chaine_device: str = "auto")
+Explique la prédiction d'un modèle CNN sur une seule image en utilisant des méthodes XAI spécifiées
+de Captum (GradientSHAP, Occlusion, IntegratedGradients, DeepLift) ou
+TorchCAM (GradCAM, LayerCAM).
+Extrait du TP7.
+
+**Entrées :**
+- `modele_cnn` (nn.Module) : Le modèle CNN PyTorch entraîné (ex: une instance EfficientNet).
+  Suppose qu'il s'agit d'un `ModeleLightningTransferLearningImage` ou qu'il a `modele.features[-1]` pour les méthodes CAM.
+- `tenseur_image_batch` (torch.Tensor) : Tenseur image d'entrée, forme attendue (1, C, H, W).
+- `idx_etiquette_vraie` (int) : L'index de classe vrai de l'image d'entrée.
+- `noms_classes` (list) : Liste des noms de classes, où l'index correspond à l'index de classe.
+- `nom_methode_xai` (str) : Nom de la méthode XAI à utiliser.
+  Supportées : "gradientshap", "occlusion", "integratedgradients", "deeplift", "gradcam", "layercam".
+- `chemin_image_originale` (str, optionnel) : Chemin vers le fichier image original (utilisé pour un des sous-graphiques). Par défaut `None`.
+- `chaine_device` (str, optionnel) : Device sur lequel exécuter ("cpu", "cuda", "auto"). Par défaut "auto".
+
+**Sorties :**
+- Aucune (affiche un graphique avec l'image originale, la carte d'attribution XAI, la superposition, et la prédiction).
+
 ```python
-## def explain_cnn_model_with_captum_torchcam(cnn_model: nn.Module, image_tensor_batch: torch.Tensor, true_label_idx: int, class_names: list, xai_method_name: str, image_path: str = None, device_str: str = "auto")
-# Explains a CNN model's prediction on a single image using specified XAI methods
-# from Captum (GradientSHAP, Occlusion, IntegratedGradients, DeepLift) or
-# TorchCAM (GradCAM, LayerCAM).
-# From TP7.
-
-# Entrées :
-# - cnn_model (nn.Module): The trained PyTorch CNN model (e.g., an EfficientNet instance).
-#                         Assumes it's a `TransferLearningLightningModel` or has `model.features[-1]` for CAM methods.
-# - image_tensor_batch (torch.Tensor): Input image tensor, expected shape (1, C, H, W).
-# - true_label_idx (int): The true class index of the input image.
-# - class_names (list): List of class names, where index corresponds to class index.
-# - xai_method_name (str): Name of the XAI method to use.
-#   Supported: "gradientshap", "occlusion", "integratedgradients", "deeplift", "gradcam", "layercam".
-# - image_path (str, optional): Path to the original image file (used for one of the subplots). Defaults to None.
-# - device_str (str, optional): Device to run on ("cpu", "cuda", "auto"). Defaults to "auto".
-
-# Sorties :
-# - None (displays a plot with original image, XAI attribution map, overlay, and prediction).
-import torch
-import torch.nn as nn
-import torch.nn.functional as F
-import matplotlib.pyplot as plt
-from torchvision.transforms.functional import to_pil_image # For overlay_mask
-from PIL import Image # For overlay_mask
-import cv2 # For text on image
-
-# XAI libraries
-from torchcam.methods import GradCAM, LayerCAM
-from torchcam.utils import overlay_mask # TorchCAM's overlay
-from captum.attr import GradientShap, Occlusion, IntegratedGradients, DeepLift 
-# captum.attr.visualization can also be used, but TP7 uses custom plotting
-
-def explain_cnn_model_with_captum_torchcam(
-    cnn_model: nn.Module, 
-    image_tensor_batch: torch.Tensor, # Expects a batch of 1 image: (1, C, H, W)
-    true_label_idx: int, 
-    class_names: list, 
-    xai_method_name: str, 
-    image_path: str = None, # Path to original image for one of the plots
-    device_str: str = "auto"):
+def expliquer_modele_cnn_captum_torchcam(
+    modele_cnn: nn.Module, 
+    tenseur_image_batch: torch.Tensor, 
+    idx_etiquette_vraie: int, 
+    noms_classes: list, 
+    nom_methode_xai: str, 
+    chemin_image_originale: str = None, 
+    chaine_device: str = "auto"):
     """
-    Explains a CNN model's prediction using Captum or TorchCAM methods.
-    `cnn_model` can be a raw nn.Module or a pl.LightningModule.
-    `image_tensor_batch` should be a single image tensor with batch dim: (1, C, H, W).
+    Explique la prédiction d'un modèle CNN en utilisant des méthodes Captum ou TorchCAM.
+    `modele_cnn` peut être un nn.Module brut ou un pl.LightningModule.
+    `tenseur_image_batch` doit être un tenseur d'image unique avec dimension batch : (1, C, H, W).
     """
 
-    if device_str == "auto":
+    if chaine_device == "auto":
         device = torch.device("cuda" if torch.cuda.is_available() else "cpu")
     else:
-        device = torch.device(device_str)
-
-    # Ensure model is on the correct device and in eval mode
-    # If cnn_model is a LightningModule, the actual nn.Module is often at self.model or self.backbone
-    # For simplicity, assume cnn_model itself is the nn.Module or can be called directly.
-    # If it's a LightningModule, you might need to pass cnn_model.model or cnn_model.backbone
-    # to CAM extractors if they need specific layer names from the *inner* model.
+        device = torch.device(chaine_device)
     
-    # Check if cnn_model is a LightningModule and get the underlying nn.Module if so for CAMs.
-    # This is a common pattern if the LightningModule wraps the actual network.
-    inner_model_for_cam = cnn_model
-    if isinstance(cnn_model, pl.LightningModule):
-        if hasattr(cnn_model, 'model') and isinstance(cnn_model.model, nn.Module): # Common for custom LightningModules
-            inner_model_for_cam = cnn_model.model
-        elif hasattr(cnn_model, 'backbone') and isinstance(cnn_model.backbone, nn.Module): # Common for TransferLearningLM
-             inner_model_for_cam = cnn_model.backbone
+    modele_interne_pour_cam = modele_cnn # Modèle à utiliser pour les extracteurs CAM
+    if isinstance(modele_cnn, pl.LightningModule):
+        if hasattr(modele_cnn, 'modele_pytorch') and isinstance(modele_cnn.modele_pytorch, nn.Module):
+            modele_interne_pour_cam = modele_cnn.modele_pytorch
+        elif hasattr(modele_cnn, 'backbone') and isinstance(modele_cnn.backbone, nn.Module):
+             modele_interne_pour_cam = modele_cnn.backbone
     
-    cnn_model.to(device)
-    cnn_model.eval()
+    modele_cnn.to(device)
+    modele_cnn.eval()
     
-    # Ensure image tensor is on the correct device and requires grad for gradient-based methods
-    img_input = image_tensor_batch.clone().detach().to(device).requires_grad_(True)
+    img_entree = tenseur_image_batch.clone().detach().to(device).requires_grad_(True)
 
-    # Get model prediction
-    with torch.no_grad(): # No gradients needed for this initial prediction
-        output_logits = cnn_model(img_input) # Shape: (1, num_classes)
+    with torch.no_grad():
+        logits_sortie = modele_cnn(img_entree) 
     
-    output_probs = F.softmax(output_logits, dim=1)
-    prediction_score, pred_label_idx_tensor = torch.topk(output_probs, 1)
-    pred_label_idx = pred_label_idx_tensor.item() # Scalar index
+    probs_sortie = F.softmax(logits_sortie, dim=1)
+    score_prediction, tenseur_idx_etiquette_pred = torch.topk(probs_sortie, 1)
+    idx_etiquette_pred = tenseur_idx_etiquette_pred.item()
 
-    attributions_np = None # To store the final attribution map as numpy array
+    np_attributions = None 
+    tenseur_attr = None # Pour Captum
 
-    # --- Captum Methods ---
-    if xai_method_name.lower() == "gradientshap":
-        gradient_shap = GradientShap(cnn_model) # Pass the callable model
-        # Baseline: random noise, or zeros, or blurred image, etc.
-        rand_img_dist = torch.cat([img_input * 0, img_input * 1]) # Example: zeros and ones as baselines
-        # rand_img_dist = torch.randn_like(img_input).repeat(20,1,1,1).to(device) # For more baselines
-        attr_tensor = gradient_shap.attribute(img_input,
-                                              baselines=rand_img_dist, #expects baselines to be a tensor or tuple of tensors
-                                              target=pred_label_idx,
-                                              n_samples=10, stdevs=0.001) # n_samples for SmoothGrad-like behavior
-        attributions_np = attr_tensor.sum(dim=1).squeeze(0).cpu().detach().numpy() # Sum over channels, remove batch
+    # --- Méthodes Captum ---
+    if nom_methode_xai.lower() == "gradientshap":
+        gs = GradientShap(modele_cnn)
+        # Lignes de base : bruit aléatoire, zéros, image floutée, etc.
+        # Le TP7 utilisait `rand_img_dist = torch.rand(50, 3, 224, 224).to(device)`
+        # Pour la simplicité, utilisons des zéros et des uns comme lignes de base
+        lignes_base_gs = torch.cat([torch.zeros_like(img_entree), torch.ones_like(img_entree)], dim=0).to(device)
+        tenseur_attr = gs.attribute(img_entree, baselines=lignes_base_gs, target=idx_etiquette_pred, n_samples=10, stdevs=0.001)
+    elif nom_methode_xai.lower() == "occlusion":
+        occ = Occlusion(modele_cnn)
+        # Adapter strides et sliding_window_shapes à la taille de l'image et des caractéristiques
+        # Par exemple, pour une image 224x224, des patchs de 16x16
+        strides_occ = (3, img_entree.shape[2]//14, img_entree.shape[3]//14) # Ex: (3, 16, 16)
+        sws_occ = (3, img_entree.shape[2]//14, img_entree.shape[3]//14) # Ex: (3, 16, 16)
+        tenseur_attr = occ.attribute(img_entree, target=idx_etiquette_pred, strides=strides_occ, 
+                                      sliding_window_shapes=sws_occ, baselines=0)
+    elif nom_methode_xai.lower() == "integratedgradients":
+        ig = IntegratedGradients(modele_cnn)
+        ligne_base_ig = torch.zeros_like(img_entree).to(device)
+        tenseur_attr = ig.attribute(img_entree, baselines=ligne_base_ig, target=idx_etiquette_pred)
+    elif nom_methode_xai.lower() == "deeplift":
+        dl = DeepLift(modele_cnn)
+        ligne_base_dl = torch.zeros_like(img_entree).to(device)
+        tenseur_attr = dl.attribute(img_entree, baselines=ligne_base_dl, target=idx_etiquette_pred)
+    
+    if tenseur_attr is not None: # Si une méthode Captum a été utilisée
+         np_attributions = tenseur_attr.sum(dim=1).squeeze(0).cpu().detach().numpy() # Somme sur les canaux
 
-    elif xai_method_name.lower() == "occlusion":
-        occlusion = Occlusion(cnn_model)
-        attr_tensor = occlusion.attribute(img_input,
-                                          target=pred_label_idx,
-                                          strides=(3, 8, 8), # (channels, H, W)
-                                          sliding_window_shapes=(3, 15, 15), # Must match channels
-                                          baselines=0) # Occlude with zeros
-        attributions_np = attr_tensor.sum(dim=1).squeeze(0).cpu().detach().numpy()
+    # --- Méthodes TorchCAM ---
+    elif nom_methode_xai.lower() in ["gradcam", "layercam"]:
+        couche_cible_cam = None
+        # Tenter de trouver une couche cible appropriée (souvent la dernière couche conv)
+        # Cette logique est spécifique au modèle et peut nécessiter une adaptation.
+        if hasattr(modele_interne_pour_cam, 'features') and isinstance(modele_interne_pour_cam.features, nn.Sequential) and len(modele_interne_pour_cam.features)>0: # Ex: EfficientNet, VGG
+            # Trouver la dernière couche Conv2d ou BatchNorm2d avant la piscine ou le classifieur
+            for layer_module in reversed(list(modele_interne_pour_cam.features)):
+                 if isinstance(layer_module, (nn.Conv2d, nn.BatchNorm2d)): # Prendre le bloc qui contient Conv/BN
+                    couche_cible_cam = layer_module
+                    break
+            if couche_cible_cam is None and len(modele_interne_pour_cam.features) > 1: # Fallback
+                 couche_cible_cam = modele_interne_pour_cam.features[-2] if len(modele_interne_pour_cam.features) > 1 else modele_interne_pour_cam.features[-1]
 
-    elif xai_method_name.lower() == "integratedgradients":
-        ig = IntegratedGradients(cnn_model)
-        baseline = torch.zeros_like(img_input).to(device)
-        attr_tensor = ig.attribute(img_input, baselines=baseline, target=pred_label_idx)
-        attributions_np = attr_tensor.sum(dim=1).squeeze(0).cpu().detach().numpy()
-
-    elif xai_method_name.lower() == "deeplift":
-        dl = DeepLift(cnn_model)
-        baseline = torch.zeros_like(img_input).to(device)
-        attr_tensor = dl.attribute(img_input, baselines=baseline, target=pred_label_idx)
-        attributions_np = attr_tensor.sum(dim=1).squeeze(0).cpu().detach().numpy()
-
-    # --- TorchCAM Methods ---
-    elif xai_method_name.lower() in ["gradcam", "layercam"]:
-        # CAM methods need a target layer from the *inner_model_for_cam*
-        # Assuming a common structure for torchvision models (e.g., .features for VGG/EfficientNet, .layer4 for ResNet)
-        target_layer_name = None
-        if hasattr(inner_model_for_cam, 'features') and isinstance(inner_model_for_cam.features, nn.Sequential): # VGG, EfficientNet
-            target_layer_name = inner_model_for_cam.features[-1] # Often the last block of features
-            if isinstance(target_layer_name, nn.AdaptiveAvgPool2d): # For EfficientNet, pool is not a conv/bn block
-                 target_layer_name = inner_model_for_cam.features[-2] 
-        elif hasattr(inner_model_for_cam, 'layer4') and isinstance(inner_model_for_cam.layer4, nn.Sequential): # ResNet
-            target_layer_name = inner_model_for_cam.layer4[-1]
-        else:
-            print(f"Warning: Could not automatically determine target layer for CAM method on {inner_model_for_cam.__class__.__name__}. Using model directly.")
-            # This might cause issues if TorchCAM expects a specific layer module.
-
-        if not target_layer_name:
-            print("Error: Target layer for CAM could not be found. CAM methods will fail.")
+        elif hasattr(modele_interne_pour_cam, 'layer4') and isinstance(modele_interne_pour_cam.layer4, nn.Sequential): # Ex: ResNet
+            couche_cible_cam = modele_interne_pour_cam.layer4[-1] # Le dernier bloc de layer4
+        
+        if not couche_cible_cam:
+            print(f"Erreur : Couche cible pour CAM n'a pas pu être trouvée pour {modele_interne_pour_cam.__class__.__name__}. CAM échouera.")
             return
 
-        if xai_method_name.lower() == "gradcam":
-            cam_extractor = GradCAM(inner_model_for_cam, target_layer=target_layer_name)
+        extracteur_cam = None
+        if nom_methode_xai.lower() == "gradcam":
+            extracteur_cam = GradCAM(modele_interne_pour_cam, target_layer=couche_cible_cam)
         else: # layercam
-            cam_extractor = LayerCAM(inner_model_for_cam, target_layer=target_layer_name)
+            extracteur_cam = LayerCAM(modele_interne_pour_cam, target_layer=couche_cible_cam)
         
-        # CAM extractors usually work with the raw model (not the LightningModule)
-        # And they need the class index of the prediction.
-        # The output_logits here are from the cnn_model (which might be LightningModule)
-        # If cnn_model is Lightning, its output is already logits.
-        # If inner_model_for_cam is different, we might need its specific output.
-        # For simplicity, use output_logits from the main model call.
-        
-        activation_map_list = cam_extractor(output_logits.squeeze(0).argmax().item(), output_logits) # Pass class_idx and scores
-        cam_extractor.remove_hooks() # Important!
-        if activation_map_list and len(activation_map_list) > 0:
-            attributions_np = activation_map_list[0].cpu().numpy() # Already [H, W]
+        # Les extracteurs CAM de torchcam nécessitent l'index de classe et les scores (logits)
+        # On utilise les logits_sortie du modèle principal (modele_cnn)
+        liste_map_activation = extracteur_cam(logits_sortie.squeeze(0).argmax().item(), logits_sortie) 
+        extracteur_cam.remove_hooks() # Important!
+        if liste_map_activation and len(liste_map_activation) > 0:
+            np_attributions = liste_map_activation[0].cpu().numpy() # Déjà [H, W]
         else:
-            print("Error: CAM extractor did not return an activation map.")
+            print("Erreur : L'extracteur CAM n'a pas retourné de carte d'activation.")
             return
     else:
-        raise ValueError(f"Unsupported XAI method: {xai_method_name}")
+        raise ValueError(f"Méthode XAI non supportée : {nom_methode_xai}")
 
-    # --- Plotting ---
-    if attributions_np is None:
-        print("Attribution map not generated.")
+    # --- Traçage ---
+    if np_attributions is None:
+        print("Carte d'attribution non générée.")
         return
         
-    # Normalize attributions for display
-    attributions_norm = (attributions_np - attributions_np.min()) / (attributions_np.max() - attributions_np.min() + 1e-9) # Add epsilon
+    # Normaliser les attributions pour l'affichage
+    attributions_norm = (np_attributions - np_attributions.min()) / (np_attributions.max() - np_attributions.min() + 1e-9)
 
-    original_img_pil = to_pil_image(img_input.squeeze(0).cpu()) # For overlay_mask
-    attribution_map_pil = to_pil_image(attributions_norm, mode='F') # Mode 'F' for float grayscale
+    img_originale_pil = F_to_pil_image(img_entree.squeeze(0).cpu()) 
+    map_attribution_pil = F_to_pil_image(attributions_norm, mode='F') # Mode 'F' pour float niveaux de gris
 
     fig, axes = plt.subplots(1, 4, figsize=(20, 5))
     
-    axes[0].imshow(original_img_pil)
-    axes[0].set_title("Original Image")
+    axes[0].imshow(img_originale_pil)
+    axes[0].set_title("Image Originale")
     axes[0].axis('off')
 
     axes[1].imshow(attributions_norm, cmap='jet')
-    axes[1].set_title(f"{xai_method_name.capitalize()} Map")
+    axes[1].set_title(f"Carte {nom_methode_xai.capitalize()}")
     axes[1].axis('off')
 
-    axes[2].imshow(overlay_mask(original_img_pil, attribution_map_pil, alpha=0.5))
-    axes[2].set_title("Overlay")
+    axes[2].imshow(torchcam_overlay_mask(img_originale_pil, map_attribution_pil, alpha=0.5))
+    axes[2].set_title("Superposition")
     axes[2].axis('off')
     
-    # Prediction text on original image (if path provided)
-    actual_class_name = class_names[true_label_idx]
-    predicted_class_name = class_names[pred_label_idx]
-    is_correct = (predicted_class_name == actual_class_name)
+    nom_classe_actuelle = noms_classes[idx_etiquette_vraie]
+    nom_classe_predite = noms_classes[idx_etiquette_pred]
+    est_correct = (nom_classe_predite == nom_classe_actuelle)
 
-    if image_path and os.path.exists(image_path):
-        img_for_text_cv2 = cv2.imread(image_path)
-        img_for_text_cv2 = cv2.cvtColor(img_for_text_cv2, cv2.COLOR_BGR2RGB)
-    else: # Fallback to tensor if path not good
-        img_for_text_cv2 = np.array(original_img_pil) 
-
-    # Resize for consistent text size if needed, or adjust font scale dynamically
-    # img_for_text_cv2 = cv2.resize(img_for_text_cv2, (224,224)) # Example fixed size
+    # Utiliser l'image chargée avec OpenCV pour le texte si le chemin est fourni
+    if chemin_image_originale and os.path.exists(chemin_image_originale):
+        img_pour_texte_cv2 = cv2.imread(chemin_image_originale)
+        img_pour_texte_cv2 = cv2.cvtColor(img_pour_texte_cv2, cv2.COLOR_BGR2RGB)
+    else: # Fallback sur le tenseur si le chemin n'est pas bon
+        img_pour_texte_cv2 = np.array(img_originale_pil) 
 
     font = cv2.FONT_HERSHEY_SIMPLEX
-    font_scale = min(img_for_text_cv2.shape[0], img_for_text_cv2.shape[1]) / 400 # Dynamic font scale
-    thickness = max(1, int(font_scale * 2))
+    # Échelle de police dynamique basée sur la taille de l'image
+    echelle_font = min(img_pour_texte_cv2.shape[0], img_pour_texte_cv2.shape[1]) / 450 
+    epaisseur = max(1, int(echelle_font * 1.8)) # Épaisseur dynamique
     
-    pred_text = f"Pred: {predicted_class_name} ({prediction_score.item():.2f})"
-    true_text = f"True: {actual_class_name}"
+    texte_pred = f"Pred: {nom_classe_predite} ({score_prediction.item():.2f})"
+    texte_vrai = f"Vrai: {nom_classe_actuelle}"
 
-    # Get text size to position it
-    (tw1, th1), _ = cv2.getTextSize(pred_text, font, font_scale, thickness)
-    (tw2, th2), _ = cv2.getTextSize(true_text, font, font_scale, thickness)
+    (tw1, th1), _ = cv2.getTextSize(texte_pred, font, echelle_font, epaisseur)
+    (tw2, th2), _ = cv2.getTextSize(texte_vrai, font, echelle_font, epaisseur)
 
-    cv2.putText(img_for_text_cv2, pred_text, (10, th1 + 10), font, font_scale, (0, 255, 0) if is_correct else (255, 0, 0), thickness, cv2.LINE_AA)
-    cv2.putText(img_for_text_cv2, true_text, (10, th1 + th2 + 20), font, font_scale, (255,255,255), thickness, cv2.LINE_AA) # White for true label
+    # Dessiner le texte sur l'image
+    y_pos = th1 + 10
+    cv2.putText(img_pour_texte_cv2, texte_pred, (10, y_pos), font, echelle_font, (0, 255, 0) if est_correct else (255, 0, 0), epaisseur, cv2.LINE_AA)
+    y_pos += th2 + 10
+    cv2.putText(img_pour_texte_cv2, texte_vrai, (10, y_pos), font, echelle_font, (255, 255, 255), epaisseur, cv2.LINE_AA) # Vrai en blanc
 
-    axes[3].imshow(img_for_text_cv2)
-    axes[3].set_title("Prediction")
+    axes[3].imshow(img_pour_texte_cv2)
+    axes[3].set_title("Prédiction")
     axes[3].axis('off')
 
-    fig.suptitle(f"XAI: {xai_method_name.capitalize()} | Correct: {is_correct}", fontsize=16, color='green' if is_correct else 'red')
-    plt.tight_layout(rect=[0, 0.05, 1, 0.95]) # Adjust for suptitle
+    fig.suptitle(f"XAI: {nom_methode_xai.capitalize()} | Correct: {est_correct}", fontsize=16, color='green' if est_correct else 'red')
+    plt.tight_layout(rect=[0, 0.02, 1, 0.95]) # Ajuster pour le suptitle
     plt.show()
+
 ```
 
+## def expliquer_modele_vit_captum_tis(modele_vit: nn.Module, tenseur_image_batch: torch.Tensor, idx_etiquette_vraie: int, noms_classes: list, nom_methode_xai: str, chemin_image_originale: str = None, chaine_device: str = "auto", tis_nb_masques: int = 1024, tis_taille_batch: int = 128)
+Explique la prédiction d'un modèle Vision Transformer (ViT) sur une seule image.
+Utilise des méthodes XAI spécifiées de Captum (GradientSHAP, Occlusion, IntegratedGradients, DeepLift)
+ou la méthode TIS (Transformer Input Sampling).
+Extrait du TP7.
+
+**Entrées :**
+- `modele_vit` (nn.Module) : Le modèle ViT PyTorch entraîné.
+  Suppose qu'il s'agit d'un `ModeleLightningTransferLearningImage` ou d'un ViT brut.
+- `tenseur_image_batch` (torch.Tensor) : Tenseur image d'entrée, forme (1, C, H, W).
+- `idx_etiquette_vraie` (int) : L'index de classe vrai de l'image d'entrée.
+- `noms_classes` (list) : Liste des noms de classes.
+- `nom_methode_xai` (str) : Nom de la méthode XAI.
+  Supportées : "gradientshap", "occlusion", "integratedgradients", "deeplift", "tis".
+- `chemin_image_originale` (str, optionnel) : Chemin vers le fichier image original pour le traçage. Par défaut `None`.
+- `chaine_device` (str, optionnel) : Device ("cpu", "cuda", "auto"). Par défaut "auto".
+- `tis_nb_masques` (int, optionnel) : Nombre de masques pour TIS. Par défaut 1024.
+- `tis_taille_batch` (int, optionnel) : Taille de batch pour TIS. Par défaut 128.
+
+**Sorties :**
+- Aucune (affiche un graphique avec l'image originale, l'attribution XAI, la superposition, et la prédiction).
+
 ```python
-## def explain_vit_model_with_captum_tis(vit_model: nn.Module, image_tensor_batch: torch.Tensor, true_label_idx: int, class_names: list, xai_method_name: str, image_path: str = None, device_str: str = "auto", tis_n_masks: int = 1024, tis_batch_size: int = 128)
-# Explains a Vision Transformer (ViT) model's prediction on a single image.
-# Uses specified XAI methods from Captum (GradientSHAP, Occlusion, IntegratedGradients, DeepLift)
-# or the TIS (Transformer Input Sampling) method.
-# From TP7.
+# TIS nécessite le clonage/l'installation de sa librairie spécifique (fait dans les instructions du TP7)
+# from Transformer_Input_Sampling.tis import TIS # Supposé importable
 
-# Entrées :
-# - vit_model (nn.Module): The trained PyTorch ViT model.
-#                         Assumes it's a `TransferLearningLightningModel` or a raw ViT.
-# - image_tensor_batch (torch.Tensor): Input image tensor, shape (1, C, H, W).
-# - true_label_idx (int): The true class index of the input image.
-# - class_names (list): List of class names.
-# - xai_method_name (str): Name of the XAI method.
-#   Supported: "gradientshap", "occlusion", "integratedgradients", "deeplift", "tis".
-# - image_path (str, optional): Path to the original image file for plotting. Defaults to None.
-# - device_str (str, optional): Device ("cpu", "cuda", "auto"). Defaults to "auto".
-# - tis_n_masks (int, optional): Number of masks for TIS. Defaults to 1024.
-# - tis_batch_size (int, optional): Batch size for TIS. Defaults to 128.
-
-# Sorties :
-# - None (displays a plot with original image, XAI attribution, overlay, and prediction).
-import torch
-import torch.nn as nn
-import torch.nn.functional as F
-import matplotlib.pyplot as plt
-from torchvision.transforms.functional import to_pil_image
-from PIL import Image
-import cv2
-import os
-import numpy as np
-
-# XAI libraries
-from captum.attr import GradientShap, Occlusion, IntegratedGradients, DeepLift
-# TIS requires cloning/installing its specific library (done in TP7 instructions)
-# from Transformer_Input_Sampling.tis import TIS # Assuming it's importable
-
-def explain_vit_model_with_captum_tis(
-    vit_model: nn.Module, 
-    image_tensor_batch: torch.Tensor, # Expects a batch of 1 image: (1, C, H, W)
-    true_label_idx: int, 
-    class_names: list, 
-    xai_method_name: str, 
-    image_path: str = None, 
-    device_str: str = "auto",
-    tis_n_masks: int = 1024, 
-    tis_batch_size: int = 128):
+def expliquer_modele_vit_captum_tis(
+    modele_vit: nn.Module, 
+    tenseur_image_batch: torch.Tensor, 
+    idx_etiquette_vraie: int, 
+    noms_classes: list, 
+    nom_methode_xai: str, 
+    chemin_image_originale: str = None, 
+    chaine_device: str = "auto",
+    tis_nb_masques: int = 1024, 
+    tis_taille_batch: int = 128):
     """
-    Explains a ViT model's prediction using Captum or TIS methods.
-    `vit_model` can be a raw nn.Module or a pl.LightningModule.
-    `image_tensor_batch` should be a single image tensor with batch dim: (1, C, H, W).
+    Explique la prédiction d'un modèle ViT en utilisant des méthodes Captum ou TIS.
+    `modele_vit` peut être un nn.Module brut ou un pl.LightningModule.
+    `tenseur_image_batch` doit être un tenseur d'image unique avec dimension batch : (1, C, H, W).
     """
     
-    if device_str == "auto":
+    if chaine_device == "auto":
         device = torch.device("cuda" if torch.cuda.is_available() else "cpu")
     else:
-        device = torch.device(device_str)
+        device = torch.device(chaine_device)
 
-    vit_model.to(device)
-    vit_model.eval()
+    modele_vit.to(device)
+    modele_vit.eval()
     
-    img_input = image_tensor_batch.clone().detach().to(device).requires_grad_(True)
+    img_entree = tenseur_image_batch.clone().detach().to(device).requires_grad_(True)
 
     with torch.no_grad():
-        output_logits = vit_model(img_input)
-    output_probs = F.softmax(output_logits, dim=1)
-    prediction_score, pred_label_idx_tensor = torch.topk(output_probs, 1)
-    pred_label_idx = pred_label_idx_tensor.item()
+        logits_sortie = modele_vit(img_entree)
+    probs_sortie = F.softmax(logits_sortie, dim=1)
+    score_prediction, tenseur_idx_etiquette_pred = torch.topk(probs_sortie, 1)
+    idx_etiquette_pred = tenseur_idx_etiquette_pred.item()
 
-    attributions_np = None
-    attr_tensor = None # Define for scope
+    np_attributions = None
+    tenseur_attr = None 
 
-    # --- Captum Methods (same as for CNN) ---
-    if xai_method_name.lower() == "gradientshap":
-        gradient_shap = GradientShap(vit_model)
-        rand_img_dist = torch.cat([img_input * 0, img_input * 1]) 
-        attr_tensor = gradient_shap.attribute(img_input, baselines=rand_img_dist, target=pred_label_idx, n_samples=10, stdevs=0.001)
-    elif xai_method_name.lower() == "occlusion":
-        occlusion = Occlusion(vit_model)
-        attr_tensor = occlusion.attribute(img_input, target=pred_label_idx, strides=(3, 16, 16), # Patch size for ViT typically 16
-                                          sliding_window_shapes=(3, 16, 16), baselines=0) # Occlude one patch at a time
-    elif xai_method_name.lower() == "integratedgradients":
-        ig = IntegratedGradients(vit_model)
-        baseline = torch.zeros_like(img_input).to(device)
-        attr_tensor = ig.attribute(img_input, baselines=baseline, target=pred_label_idx)
-    elif xai_method_name.lower() == "deeplift":
-        dl = DeepLift(vit_model)
-        baseline = torch.zeros_like(img_input).to(device)
-        attr_tensor = dl.attribute(img_input, baselines=baseline, target=pred_label_idx)
+    # --- Méthodes Captum (identiques à celles pour CNN) ---
+    if nom_methode_xai.lower() == "gradientshap":
+        gs = GradientShap(modele_vit)
+        lignes_base_gs = torch.cat([torch.zeros_like(img_entree), torch.ones_like(img_entree)], dim=0).to(device)
+        tenseur_attr = gs.attribute(img_entree, baselines=lignes_base_gs, target=idx_etiquette_pred, n_samples=10, stdevs=0.001)
+    elif nom_methode_xai.lower() == "occlusion":
+        occ = Occlusion(modele_vit)
+        # Pour ViT, la taille de la fenêtre glissante devrait idéalement correspondre à la taille d'un patch
+        # Supposons une taille de patch de 16x16 pour une image de 224x224 (14x14 patches)
+        patch_size = img_entree.shape[2] // 14 # Approximation
+        strides_occ = (3, patch_size, patch_size) 
+        sws_occ = (3, patch_size, patch_size) 
+        tenseur_attr = occ.attribute(img_entree, target=idx_etiquette_pred, strides=strides_occ, 
+                                      sliding_window_shapes=sws_occ, baselines=0)
+    elif nom_methode_xai.lower() == "integratedgradients":
+        ig = IntegratedGradients(modele_vit)
+        ligne_base_ig = torch.zeros_like(img_entree).to(device)
+        tenseur_attr = ig.attribute(img_entree, baselines=ligne_base_ig, target=idx_etiquette_pred)
+    elif nom_methode_xai.lower() == "deeplift":
+        dl = DeepLift(modele_vit)
+        ligne_base_dl = torch.zeros_like(img_entree).to(device)
+        tenseur_attr = dl.attribute(img_entree, baselines=ligne_base_dl, target=idx_etiquette_pred)
     
-    if attr_tensor is not None: # If a Captum method was used
-         attributions_np = attr_tensor.sum(dim=1).squeeze(0).cpu().detach().numpy() # Sum over channels
+    if tenseur_attr is not None: 
+         np_attributions = tenseur_attr.sum(dim=1).squeeze(0).cpu().detach().numpy()
 
-    # --- TIS Method ---
-    elif xai_method_name.lower() == "tis":
+    # --- Méthode TIS ---
+    elif nom_methode_xai.lower() == "tis":
         try:
-            from Transformer_Input_Sampling.tis import TIS # Local import
+            from Transformer_Input_Sampling.tis import TIS # Importation locale
             
-            # TIS expects the raw nn.Module, not the LightningModule wrapper
-            inner_vit_model = vit_model
-            if isinstance(vit_model, pl.LightningModule):
-                if hasattr(vit_model, 'model') and isinstance(vit_model.model, nn.Module):
-                    inner_vit_model = vit_model.model
-                elif hasattr(vit_model, 'backbone') and isinstance(vit_model.backbone, nn.Module): # Common for TransferLearningLM
-                     inner_vit_model = vit_model.backbone
+            modele_interne_vit = modele_vit # Modèle nn.Module brut pour TIS
+            if isinstance(modele_vit, pl.LightningModule):
+                if hasattr(modele_vit, 'modele_pytorch') and isinstance(modele_vit.modele_pytorch, nn.Module):
+                    modele_interne_vit = modele_vit.modele_pytorch
+                elif hasattr(modele_vit, 'backbone') and isinstance(modele_vit.backbone, nn.Module):
+                     modele_interne_vit = modele_vit.backbone
                 else:
-                    print("Warning: Could not get inner nn.Module from LightningModule for TIS. Using the LightningModule itself.")
+                    print("Avertissement : Impossible d'obtenir le nn.Module interne du LightningModule pour TIS. Utilisation du LightningModule lui-même.")
             
-            tis_explainer = TIS(inner_vit_model, n_masks=tis_n_masks, batch_size=tis_batch_size, verbose=False) # verbose=False to reduce print
-            # TIS returns attribution map directly, shape (H, W) or (1, H, W)
-            attr_map_tis = tis_explainer(img_input).cpu().detach() # img_input already on device
-            if attr_map_tis.ndim == 3 and attr_map_tis.shape[0] == 1: # If [1, H, W]
-                attributions_np = attr_map_tis.squeeze(0).numpy()
-            elif attr_map_tis.ndim == 2: # If [H, W]
-                 attributions_np = attr_map_tis.numpy()
+            explainer_tis = TIS(modele_interne_vit, n_masks=tis_nb_masques, batch_size=tis_taille_batch, verbose=False)
+            # TIS retourne directement la carte d'attribution, forme (H, W) ou (1, H, W)
+            map_attr_tis = explainer_tis(img_entree).cpu().detach() # img_entree est déjà sur device
+            if map_attr_tis.ndim == 3 and map_attr_tis.shape[0] == 1: # Si [1, H, W]
+                np_attributions = map_attr_tis.squeeze(0).numpy()
+            elif map_attr_tis.ndim == 2: # Si [H, W]
+                 np_attributions = map_attr_tis.numpy()
             else:
-                print(f"Unexpected TIS output shape: {attr_map_tis.shape}")
+                print(f"Forme de sortie TIS inattendue : {map_attr_tis.shape}")
                 return
         except ImportError:
-            print("Error: Transformer_Input_Sampling (TIS) library not found or import failed.")
-            print("Please ensure it's installed and accessible (e.g., cloned from GitHub as per TP7).")
+            print("Erreur : Librairie Transformer_Input_Sampling (TIS) introuvable ou échec de l'import.")
+            print("Veuillez vous assurer qu'elle est installée et accessible (ex: clonée depuis GitHub comme par TP7).")
             return
         except Exception as e:
-            print(f"Error during TIS explanation: {e}")
+            print(f"Erreur pendant l'explication TIS : {e}")
             return
     else:
-        raise ValueError(f"Unsupported XAI method for ViT: {xai_method_name}")
+        raise ValueError(f"Méthode XAI non supportée pour ViT : {nom_methode_xai}")
 
-    # --- Plotting (same as for CNN) ---
-    if attributions_np is None:
-        print("Attribution map not generated.")
+    # --- Traçage (identique à celui pour CNN) ---
+    if np_attributions is None:
+        print("Carte d'attribution non générée.")
         return
         
-    attributions_norm = (attributions_np - attributions_np.min()) / (attributions_np.max() - attributions_np.min() + 1e-9)
+    attributions_norm = (np_attributions - np_attributions.min()) / (np_attributions.max() - np_attributions.min() + 1e-9)
 
-    original_img_pil = to_pil_image(img_input.squeeze(0).cpu())
-    attribution_map_pil = to_pil_image(attributions_norm, mode='F')
+    img_originale_pil = F_to_pil_image(img_entree.squeeze(0).cpu())
+    map_attribution_pil = F_to_pil_image(attributions_norm, mode='F')
 
     fig, axes = plt.subplots(1, 4, figsize=(20, 5))
-    axes[0].imshow(original_img_pil); axes[0].set_title("Original Image"); axes[0].axis('off')
-    axes[1].imshow(attributions_norm, cmap='jet'); axes[1].set_title(f"{xai_method_name.capitalize()} Map"); axes[1].axis('off')
+    axes[0].imshow(img_originale_pil); axes[0].set_title("Image Originale"); axes[0].axis('off')
+    axes[1].imshow(attributions_norm, cmap='jet'); axes[1].set_title(f"Carte {nom_methode_xai.capitalize()}"); axes[1].axis('off')
     
-    # For overlay_mask, need PIL images. TorchCAM's overlay_mask is convenient.
-    # If not using torchcam's overlay, implement a simple one:
-    # overlayed_img = np.array(original_img_pil) * 0.5 + plt.cm.jet(attributions_norm)[:,:,:3] * 255 * 0.5
-    # axes[2].imshow(overlayed_img.astype(np.uint8))
-    try:
-        from torchcam.utils import overlay_mask as torchcam_overlay # Try to use torchcam's
-        axes[2].imshow(torchcam_overlay(original_img_pil, attribution_map_pil, alpha=0.5))
-    except ImportError: # Fallback if torchcam not available or issues with its overlay
-        print("TorchCAM overlay not available, showing simple heatmap blend.")
-        blend = np.array(original_img_pil, dtype=float) * 0.5
-        heatmap_color = (plt.cm.jet(attributions_norm)[:, :, :3] * 255).astype(float) # Get RGB from cmap
-        blend += heatmap_color * 0.5
-        axes[2].imshow(np.clip(blend, 0, 255).astype(np.uint8))
+    try: # Utiliser torchcam_overlay_mask si disponible
+        axes[2].imshow(torchcam_overlay_mask(img_originale_pil, map_attribution_pil, alpha=0.5))
+    except NameError: # Fallback si torchcam_overlay_mask n'est pas défini (ou importé comme tel)
+        print("torchcam_overlay_mask non disponible, affichage d'un simple mélange de carte de chaleur.")
+        melange = np.array(img_originale_pil, dtype=float) * 0.5
+        couleur_heatmap = (plt.cm.jet(attributions_norm)[:, :, :3] * 255).astype(float)
+        melange += couleur_heatmap * 0.5
+        axes[2].imshow(np.clip(melange, 0, 255).astype(np.uint8))
 
-    axes[2].set_title("Overlay"); axes[2].axis('off')
+    axes[2].set_title("Superposition"); axes[2].axis('off')
     
-    actual_class_name = class_names[true_label_idx]
-    predicted_class_name = class_names[pred_label_idx]
-    is_correct = (predicted_class_name == actual_class_name)
+    nom_classe_actuelle = noms_classes[idx_etiquette_vraie]
+    nom_classe_predite = noms_classes[idx_etiquette_pred]
+    est_correct = (nom_classe_predite == nom_classe_actuelle)
 
-    if image_path and os.path.exists(image_path):
-        img_for_text_cv2 = cv2.imread(image_path)
-        img_for_text_cv2 = cv2.cvtColor(img_for_text_cv2, cv2.COLOR_BGR2RGB)
+    if chemin_image_originale and os.path.exists(chemin_image_originale):
+        img_pour_texte_cv2 = cv2.imread(chemin_image_originale)
+        img_pour_texte_cv2 = cv2.cvtColor(img_pour_texte_cv2, cv2.COLOR_BGR2RGB)
     else:
-        img_for_text_cv2 = np.array(original_img_pil)
+        img_pour_texte_cv2 = np.array(img_originale_pil)
         
     font = cv2.FONT_HERSHEY_SIMPLEX
-    font_scale = min(img_for_text_cv2.shape[0], img_for_text_cv2.shape[1]) / 400
-    thickness = max(1, int(font_scale * 2))
-    pred_text = f"Pred: {predicted_class_name} ({prediction_score.item():.2f})"
-    true_text = f"True: {actual_class_name}"
-    (tw1, th1), _ = cv2.getTextSize(pred_text, font, font_scale, thickness)
-    (tw2, th2), _ = cv2.getTextSize(true_text, font, font_scale, thickness)
-    cv2.putText(img_for_text_cv2, pred_text, (10, th1 + 10), font, font_scale, (0, 255, 0) if is_correct else (255, 0, 0), thickness, cv2.LINE_AA)
-    cv2.putText(img_for_text_cv2, true_text, (10, th1 + th2 + 20), font, font_scale, (255,255,255), thickness, cv2.LINE_AA)
+    echelle_font = min(img_pour_texte_cv2.shape[0], img_pour_texte_cv2.shape[1]) / 450
+    epaisseur = max(1, int(echelle_font * 1.8))
+    texte_pred = f"Pred: {nom_classe_predite} ({score_prediction.item():.2f})"
+    texte_vrai = f"Vrai: {nom_classe_actuelle}"
+    (tw1, th1), _ = cv2.getTextSize(texte_pred, font, echelle_font, epaisseur)
+    (tw2, th2), _ = cv2.getTextSize(texte_vrai, font, echelle_font, epaisseur)
+    y_pos = th1 + 10
+    cv2.putText(img_pour_texte_cv2, texte_pred, (10, y_pos), font, echelle_font, (0, 255, 0) if est_correct else (255, 0, 0), epaisseur, cv2.LINE_AA)
+    y_pos += th2 + 10
+    cv2.putText(img_pour_texte_cv2, texte_vrai, (10, y_pos), font, echelle_font, (255,255,255), epaisseur, cv2.LINE_AA)
 
-    axes[3].imshow(img_for_text_cv2); axes[3].set_title("Prediction"); axes[3].axis('off')
-    fig.suptitle(f"XAI (ViT): {xai_method_name.capitalize()} | Correct: {is_correct}", fontsize=16, color='green' if is_correct else 'red')
-    plt.tight_layout(rect=[0, 0.05, 1, 0.95])
+    axes[3].imshow(img_pour_texte_cv2); axes[3].set_title("Prédiction"); axes[3].axis('off')
+    fig.suptitle(f"XAI (ViT): {nom_methode_xai.capitalize()} | Correct: {est_correct}", fontsize=16, color='green' if est_correct else 'red')
+    plt.tight_layout(rect=[0, 0.02, 1, 0.95])
     plt.show()
 ```
 
+## def creer_masques_rise(nb_masques: int, petit_h_masque: int, petit_l_masque: int, h_image: int, l_image: int, proba_p1: float = 0.5) -> torch.Tensor
+Génère un lot de masques binaires aléatoires pour la méthode RISE (Randomized Input Sampling for Explanation).
+Chaque petit masque est suréchantillonné à la taille de l'image et recadré aléatoirement.
+Extrait du TP7 (Partie Optionnelle).
+
+**Entrées :**
+- `nb_masques` (int) : Nombre de masques aléatoires à générer.
+- `petit_h_masque` (int) : Hauteur du petit masque aléatoire initial.
+- `petit_l_masque` (int) : Largeur du petit masque aléatoire initial.
+- `h_image` (int) : Hauteur de l'image cible (et taille finale du masque).
+- `l_image` (int) : Largeur de l'image cible (et taille finale du masque).
+- `proba_p1` (float, optionnel) : Probabilité d'un '1' dans le petit masque binaire. Par défaut 0.5.
+
+**Sorties :**
+- `tenseur_masques` (torch.Tensor) : Un tenseur de forme (nb_masques, h_image, l_image) contenant les masques générés,
+normalisés à [0, 1].
+
 ```python
-## def create_rise_masks(num_masks: int, mask_small_h: int, mask_small_w: int, image_h: int, image_w: int, p1_probability: float = 0.5) -> torch.Tensor
-# Generates a batch of random binary masks for the RISE (Randomized Input Sampling for Explanation) method.
-# Each small mask is upsampled to the image size and randomly cropped.
-# From TP7 (Optional Part).
-
-# Entrées :
-# - num_masks (int): Number of random masks to generate.
-# - mask_small_h (int): Height of the initial small random mask.
-# - mask_small_w (int): Width of the initial small random mask.
-# - image_h (int): Height of the target image (and final mask size).
-# - image_w (int): Width of the target image (and final mask size).
-# - p1_probability (float, optional): Probability of a '1' in the small binary mask. Defaults to 0.5.
-
-# Sorties :
-# - masks_tensor (torch.Tensor): A tensor of shape (num_masks, image_h, image_w) containing the generated masks,
-#                                normalized to [0, 1].
-import torch
-import numpy as np
-from PIL import Image # For resizing with different interpolation methods
-# from skimage.transform import resize as skimage_resize # Alternative resize
-
-def create_rise_masks(num_masks: int, mask_small_h: int, mask_small_w: int, image_h: int, image_w: int, p1_probability: float = 0.5) -> torch.Tensor:
+def creer_masques_rise(nb_masques: int, petit_h_masque: int, petit_l_masque: int, h_image: int, l_image: int, proba_p1: float = 0.5) -> torch.Tensor:
     """
-    Generates random binary masks, upsamples, and crops them for RISE.
+    Génère des masques binaires aléatoires, les suréchantillonne et les recadre pour RISE.
     """
-    masks_list = []
-    for _ in range(num_masks):
-        # 1. Create small random binary mask (0s and 1s)
-        small_mask_np = np.random.choice([0, 1], size=(mask_small_h, mask_small_w), p=[1 - p1_probability, p1_probability])
+    liste_masques = []
+    for _ in range(nb_masques):
+        # 1. Créer un petit masque binaire aléatoire (0s et 1s)
+        petit_masque_np = np.random.choice([0, 1], size=(petit_h_masque, petit_l_masque), p=[1 - proba_p1, proba_p1])
         
-        # 2. Upsample the small mask to be slightly larger than the image
-        # Using PIL for resizing as in the original TP example (Image.BILINEAR)
-        # Scale factor should make it a bit larger than image_h, image_w before cropping
-        # Target upsampled size: (image_h + mask_small_h, image_w + mask_small_w) to allow for random cropping later.
-        # No, the TP code uses (image_h + h, image_w + w) for resize, which is (image_h + mask_small_h, image_w + mask_small_w)
-        # The variable names h,w in TP7's create_mask seem to refer to mask_small_h, mask_small_w here
+        # 2. Suréchantillonner le petit masque pour qu'il soit légèrement plus grand que l'image
+        # Le TP7 code utilise (h_image + petit_h_masque, l_image + petit_l_masque) pour redimensionner
         
-        upsampled_h = image_h + mask_small_h 
-        upsampled_w = image_w + mask_small_w
+        h_sur_echant = h_image + petit_h_masque 
+        l_sur_echant = l_image + petit_l_masque
 
-        # Convert to PIL Image, then resize
-        small_mask_pil = Image.fromarray((small_mask_np * 255).astype(np.uint8), mode='L') # 'L' for grayscale
-        upsampled_mask_pil = small_mask_pil.resize((upsampled_w, upsampled_h), resample=Image.Resampling.BILINEAR)
-        upsampled_mask_np = np.array(upsampled_mask_pil, dtype=np.float32) / 255.0 # Back to [0,1] float
+        # Convertir en Image PIL, puis redimensionner
+        petit_masque_pil = Image.fromarray((petit_masque_np * 255).astype(np.uint8), mode='L') # 'L' pour niveaux de gris
+        masque_sur_echant_pil = petit_masque_pil.resize((l_sur_echant, h_sur_echant), resample=Image.Resampling.BILINEAR)
+        masque_sur_echant_np = np.array(masque_sur_echant_pil, dtype=np.float32) / 255.0 # Retour à [0,1] float
 
-        # 3. Randomly crop the upsampled mask to the image size
-        crop_y = np.random.randint(0, mask_small_h + 1) # Max y_start for crop
-        crop_x = np.random.randint(0, mask_small_w + 1) # Max x_start for crop
+        # 3. Recadrer aléatoirement le masque suréchantillonné à la taille de l'image
+        rec_y = np.random.randint(0, petit_h_masque + 1) # y_début max pour le recadrage
+        rec_x = np.random.randint(0, petit_l_masque + 1) # x_début max pour le recadrage
         
-        final_mask_np = upsampled_mask_np[crop_y : crop_y + image_h, crop_x : crop_x + image_w]
+        masque_final_np = masque_sur_echant_np[rec_y : rec_y + h_image, rec_x : rec_x + l_image]
         
-        # Normalize (though it should be close to [0,1] already from /255.0)
-        min_val, max_val = final_mask_np.min(), final_mask_np.max()
-        if max_val > min_val: # Avoid division by zero if mask is flat
-            final_mask_np = (final_mask_np - min_val) / (max_val - min_val)
-        else: # If flat, it's likely all 0s or all 1s from p1_probability being 0 or 1.
-            final_mask_np = np.ones_like(final_mask_np) * min_val # Keep it flat
+        # Normaliser (devrait déjà être proche de [0,1] après /255.0)
+        min_val, max_val = masque_final_np.min(), masque_final_np.max()
+        if max_val > min_val: # Éviter la division par zéro si le masque est plat
+            masque_final_np = (masque_final_np - min_val) / (max_val - min_val)
+        else: # Si plat, c'est probablement tout 0 ou tout 1 à cause de proba_p1 étant 0 ou 1.
+            masque_final_np = np.ones_like(masque_final_np) * min_val # Le garder plat
 
-        masks_list.append(torch.from_numpy(final_mask_np))
+        liste_masques.append(torch.from_numpy(masque_final_np))
         
-    return torch.stack(masks_list) # Shape: (num_masks, image_h, image_w)
+    return torch.stack(liste_masques) # Forme : (nb_masques, h_image, l_image)
+
 ```
 
+## def appliquer_masques_rise_et_predire(modele: nn.Module, tenseur_image_originale: torch.Tensor, tenseur_masques_rise: torch.Tensor, taille_batch_preds: int = 32, chaine_device: str = "auto") -> torch.Tensor
+Applique un ensemble de masques RISE à une image originale, créant des images masquées,
+puis obtient les prédictions d'un modèle pour ces images masquées.
+Extrait du TP7 (Partie Optionnelle).
+Modifié pour ne retourner que les prédictions, car les images masquées peuvent être recréées ou ne sont pas toujours nécessaires pour la suite.
+
+**Entrées :**
+- `modele` (nn.Module) : Le modèle PyTorch à utiliser pour les prédictions.
+- `tenseur_image_originale` (torch.Tensor) : L'image d'entrée originale, forme (C, H, W) ou (1, C, H, W).
+- `tenseur_masques_rise` (torch.Tensor) : Tenseur des masques RISE, forme (NbMasques, H, W).
+- `taille_batch_preds` (int, optionnel) : Taille de batch pour exécuter les prédictions afin de gérer la mémoire. Par défaut 32.
+- `chaine_device` (str, optionnel) : Device ("cpu", "cuda", "auto"). Par défaut "auto".
+
+**Sorties :**
+- `tenseur_predictions` (torch.Tensor) : Tenseur des prédictions du modèle (probabilités softmax) pour les images masquées,
+forme (NbMasques, NbClasses).
+
 ```python
-## def apply_rise_masks_and_predict(model: nn.Module, original_image_tensor: torch.Tensor, rise_masks_tensor: torch.Tensor, batch_size_preds: int = 32, device_str: str = "auto") -> tuple[torch.Tensor, torch.Tensor]
-# Applies a set of RISE masks to an original image, creating masked images,
-# and then gets predictions from a model for these masked images.
-# From TP7 (Optional Part).
-
-# Entrées :
-# - model (nn.Module): The PyTorch model to use for predictions.
-# - original_image_tensor (torch.Tensor): The original input image, shape (C, H, W) or (1, C, H, W).
-# - rise_masks_tensor (torch.Tensor): Tensor of RISE masks, shape (NumMasks, H, W).
-# - batch_size_preds (int, optional): Batch size for running predictions to manage memory. Defaults to 32.
-# - device_str (str, optional): Device ("cpu", "cuda", "auto"). Defaults to "auto".
-
-# Sorties :
-# - masked_images_tensor (torch.Tensor): Tensor of all masked images, shape (NumMasks, C, H, W).
-# - predictions_tensor (torch.Tensor): Tensor of model predictions (softmax probabilities) for masked images,
-#                                     shape (NumMasks, NumClasses).
-import torch
-import torch.nn as nn
-import torch.nn.functional as F
-from tqdm import tqdm
-
-def apply_rise_masks_and_predict(
-    model: nn.Module, 
-    original_image_tensor: torch.Tensor, # Shape (C, H, W) or (1, C, H, W)
-    rise_masks_tensor: torch.Tensor,     # Shape (NumMasks, H, W)
-    batch_size_preds: int = 32, 
-    device_str: str = "auto"
-) -> tuple[torch.Tensor, torch.Tensor]:
+def appliquer_masques_rise_et_predire(
+    modele: nn.Module, 
+    tenseur_image_originale: torch.Tensor, # Forme (C, H, W) ou (1, C, H, W)
+    tenseur_masques_rise: torch.Tensor,     # Forme (NbMasques, H, W)
+    taille_batch_preds: int = 32, 
+    chaine_device: str = "auto"
+) -> torch.Tensor: # Retourne seulement les prédictions
     """
-    Applies RISE masks to an image, gets model predictions for masked images.
-    Returns all masked images and their corresponding predictions (softmax probabilities).
+    Applique les masques RISE à une image, obtient les prédictions du modèle pour les images masquées.
+    Retourne les prédictions (probabilités softmax).
     """
-    if device_str == "auto":
+    if chaine_device == "auto":
         device = torch.device("cuda" if torch.cuda.is_available() else "cpu")
     else:
-        device = torch.device(device_str)
+        device = torch.device(chaine_device)
 
-    model.to(device)
-    model.eval()
+    modele.to(device)
+    modele.eval()
 
-    if original_image_tensor.ndim == 3: # (C, H, W)
-        original_image_tensor = original_image_tensor.unsqueeze(0) # Add batch dim: (1, C, H, W)
+    if tenseur_image_originale.ndim == 3: # (C, H, W)
+        tenseur_image_originale = tenseur_image_originale.unsqueeze(0) # Ajouter dim batch : (1, C, H, W)
     
-    original_image_tensor = original_image_tensor.to(device)
-    rise_masks_tensor = rise_masks_tensor.to(device)
+    tenseur_image_originale = tenseur_image_originale.to(device)
+    tenseur_masques_rise = tenseur_masques_rise.to(device) # Déplacer les masques aussi
 
-    num_masks = rise_masks_tensor.shape[0]
-    num_channels = original_image_tensor.shape[1]
+    nb_masques = tenseur_masques_rise.shape[0]
     
-    # Prepare to store all masked images and predictions
-    #masked_images_list = [] # Can be memory intensive if num_masks is large
-    all_predictions_list = []
-
-    # For masked_images_tensor, pre-allocate if possible, or handle in batches
-    # If storing all masked images is too much, this function could be a generator
-    # or only return predictions. For RISE, we don't strictly need to return all masked images.
-    # The TP example stores X (masked images) and masks separately.
-    # Let's create masked images on the fly for prediction to save memory for X.
+    liste_toutes_predictions = []
     
-    print(f"Applying {num_masks} masks and predicting in batches of {batch_size_preds}...")
+    print(f"Application de {nb_masques} masques et prédiction par lots de {taille_batch_preds}...")
     with torch.no_grad():
-        for i in tqdm(range(0, num_masks, batch_size_preds)):
-            batch_masks = rise_masks_tensor[i : i + batch_size_preds] # (batch, H, W)
+        for i in tqdm(range(0, nb_masques, taille_batch_preds)):
+            batch_masques = tenseur_masques_rise[i : i + taille_batch_preds] # (batch, H, W)
             
-            # Element-wise multiplication: original_image (1,C,H,W) * batch_masks (batch,1,H,W)
-            # Unsqueeze batch_masks to make it broadcastable with image channels
-            current_batch_masked_images = original_image_tensor * batch_masks.unsqueeze(1) # (batch, C, H, W)
+            # Multiplication élément par élément : image_originale (1,C,H,W) * batch_masques (batch,1,H,W)
+            # Décompresser batch_masques pour le rendre diffusable avec les canaux de l'image
+            images_masquees_batch_actuel = tenseur_image_originale * batch_masques.unsqueeze(1) # (batch, C, H, W)
             
-            # masked_images_list.append(current_batch_masked_images.cpu()) # Collect if needed
-            
-            # Get predictions for the current batch of masked images
-            logits = model(current_batch_masked_images) # (batch, NumClasses)
-            probabilities = F.softmax(logits, dim=1)    # (batch, NumClasses)
-            all_predictions_list.append(probabilities.cpu())
+            # Obtenir les prédictions pour le lot actuel d'images masquées
+            logits = modele(images_masquees_batch_actuel) # (batch, NbClasses)
+            probabilities = F.softmax(logits, dim=1)    # (batch, NbClasses)
+            liste_toutes_predictions.append(probabilities.cpu()) # Collecter sur CPU pour économiser mémoire GPU
 
-    #all_masked_images_tensor = torch.cat(masked_images_list, dim=0) if masked_images_list else torch.empty(0)
-    all_predictions_tensor = torch.cat(all_predictions_list, dim=0)
+    tenseur_toutes_predictions = torch.cat(liste_toutes_predictions, dim=0)
     
-    # For RISE, we typically need the original masks and the predictions.
-    # The masked images themselves are intermediate.
-    # The TP7 optional part stores X (masked images) and masks.
-    # Let's refine to match that more closely: return predictions. The masks are input.
-    
-    # For the purpose of the next step (create_rise_saliency_map), we need `predictions_tensor`
-    # and the `rise_masks_tensor` (which was an input).
-    
-    # The TP7 code stores X (masked images). If this is critical, we need to manage memory.
-    # For now, this function will focus on getting the predictions.
-    # If X is needed, it should be generated and passed along, or generated here.
-    # The function in TP7 `create_sum_mask` uses `masks` and `preds_masked`.
-    # So this function should return `preds_masked`. The `masks` are already available.
-
-    return all_predictions_tensor # Shape (NumMasks, NumClasses)
-
+    return tenseur_toutes_predictions # Forme (NbMasques, NbClasses)
 ```
 
+## def creer_carte_saliency_rise(tenseur_masques_rise: torch.Tensor, tenseur_predictions: torch.Tensor, index_classe: int) -> torch.Tensor
+Crée une carte de saillance RISE pour une classe spécifique en effectuant une somme pondérée des masques RISE.
+Les poids sont les scores de prédiction du modèle (probabilités) pour la classe spécifiée pour chaque image masquée.
+Extrait du TP7 (Partie Optionnelle).
+
+**Entrées :**
+- `tenseur_masques_rise` (torch.Tensor) : Tenseur des masques RISE, forme (NbMasques, H, W).
+- `tenseur_predictions` (torch.Tensor) : Tenseur des prédictions du modèle (probabilités softmax) pour les images masquées,
+forme (NbMasques, NbClasses). C'est la sortie de `appliquer_masques_rise_et_predire`.
+- `index_classe` (int) : L'index de la classe cible pour laquelle générer la carte de saillance.
+
+**Sorties :**
+- `carte_saliency` (torch.Tensor) : La carte de saillance générée, forme (H, W), normalisée à [0, 1].
+
 ```python
-## def create_rise_saliency_map(rise_masks_tensor: torch.Tensor, predictions_tensor: torch.Tensor, class_index: int) -> torch.Tensor
-# Creates a RISE saliency map for a specific class by performing a weighted sum of the RISE masks.
-# The weights are the model's prediction scores (probabilities) for the specified class for each masked image.
-# From TP7 (Optional Part).
-
-# Entrées :
-# - rise_masks_tensor (torch.Tensor): Tensor of RISE masks, shape (NumMasks, H, W).
-# - predictions_tensor (torch.Tensor): Tensor of model predictions (softmax probabilities) for masked images,
-#                                     shape (NumMasks, NumClasses). This is output from
-#                                     `apply_rise_masks_and_predict`.
-# - class_index (int): The index of the target class for which to generate the saliency map.
-
-# Sorties :
-# - saliency_map (torch.Tensor): The generated saliency map, shape (H, W), normalized to [0, 1].
-
-import torch
-
-def create_rise_saliency_map(
-    rise_masks_tensor: torch.Tensor,     # (NumMasks, H, W)
-    predictions_tensor: torch.Tensor,  # (NumMasks, NumClasses)
-    class_index: int
+def creer_carte_saliency_rise(
+    tenseur_masques_rise: torch.Tensor,     # (NbMasques, H, W)
+    tenseur_predictions: torch.Tensor,  # (NbMasques, NbClasses)
+    index_classe: int
 ) -> torch.Tensor:
     """
-    Creates a RISE saliency map for a specific class.
-    It's a weighted sum of masks, where weights are prediction scores for that class.
+    Crée une carte de saillance RISE pour une classe spécifique.
+    C'est une somme pondérée de masques, où les poids sont les scores de prédiction pour cette classe.
     """
-    if class_index < 0 or class_index >= predictions_tensor.shape[1]:
-        raise ValueError(f"Invalid class_index {class_index}. Must be between 0 and {predictions_tensor.shape[1]-1}.")
+    if index_classe < 0 or index_classe >= tenseur_predictions.shape[1]:
+        raise ValueError(f"index_classe invalide {index_classe}. Doit être entre 0 et {tenseur_predictions.shape[1]-1}.")
 
-    # Get the prediction scores for the target class_index for all masked images
-    # These scores will be the weights for the masks
-    weights_for_masks = predictions_tensor[:, class_index] # Shape: (NumMasks)
+    # Obtenir les scores de prédiction pour l'index_classe cible pour toutes les images masquées
+    # Ces scores seront les poids pour les masques
+    poids_pour_masques = tenseur_predictions[:, index_classe] # Forme : (NbMasques)
 
-    # Ensure rise_masks_tensor and weights_for_masks are on the same device (e.g., CPU for this)
-    # And ensure they are float for multiplication
-    masks = rise_masks_tensor.cpu().float()
-    weights = weights_for_masks.cpu().float()
+    # S'assurer que tenseur_masques_rise et poids_pour_masques sont sur le même device (ex: CPU pour cela)
+    # Et s'assurer qu'ils sont float pour la multiplication
+    masques = tenseur_masques_rise.cpu().float()
+    poids = poids_pour_masques.cpu().float()
 
-    # Weighted sum of masks: Sum_i ( mask_i * weight_i )
-    # masks is (NumMasks, H, W), weights is (NumMasks)
-    # We need to reshape weights to (NumMasks, 1, 1) to broadcast with masks
+    # Somme pondérée des masques : Somme_i ( masque_i * poids_i )
+    # masques est (NbMasques, H, W), poids est (NbMasques)
+    # Il faut redimensionner poids en (NbMasques, 1, 1) pour le diffuser avec les masques
     
-    # Element-wise multiplication and sum over the NumMasks dimension
-    # saliency_map = torch.sum(masks * weights.view(-1, 1, 1), dim=0)
-    # Alternative using einsum for clarity (or matmul if preferred)
-    saliency_map = torch.einsum('n h w, n -> h w', masks, weights)
+    # Multiplication élément par élément et somme sur la dimension NbMasques
+    # carte_saliency = torch.sum(masques * poids.view(-1, 1, 1), dim=0)
+    # Alternative utilisant einsum pour la clarté
+    carte_saliency = torch.einsum('n h w, n -> h w', masques, poids)
 
-
-    # Normalize the saliency map to be in [0, 1] for visualization
-    min_val = torch.min(saliency_map)
-    max_val = torch.max(saliency_map)
+    # Normaliser la carte de saillance pour qu'elle soit dans [0, 1] pour la visualisation
+    min_val = torch.min(carte_saliency)
+    max_val = torch.max(carte_saliency)
     
-    if max_val > min_val: # Avoid division by zero if map is flat
-        saliency_map_normalized = (saliency_map - min_val) / (max_val - min_val)
-    else: # If map is flat (e.g., all zeros if all weights were zero)
-        saliency_map_normalized = torch.zeros_like(saliency_map) # Or ones_like * min_val
+    if max_val > min_val: # Éviter la division par zéro si la carte est plate
+        carte_saliency_normalisee = (carte_saliency - min_val) / (max_val - min_val)
+    else: # Si la carte est plate (ex: tout zéros si tous les poids étaient zéro)
+        carte_saliency_normalisee = torch.zeros_like(carte_saliency) 
 
-    return saliency_map_normalized # Shape: (H, W)
-
+    return carte_saliency_normalisee # Forme : (H, W)
 ```
 
+## def visualiser_resultats_saliency_rise(image_originale_pil: Image.Image, cartes_saliency_par_classe: dict, titre_principal: str = "Cartes de Saillance RISE")
+Trace l'image originale aux côtés des cartes de saillance RISE pour plusieurs classes.
+Chaque carte de saillance est superposée sur une version en niveaux de gris de l'image originale.
+Extrait du TP7 (Partie Optionnelle).
+
+**Entrées :**
+- `image_originale_pil` (PIL.Image.Image) : L'image d'entrée originale sous forme d'objet PIL Image.
+- `cartes_saliency_par_classe` (dict) : Un dictionnaire où les clés sont des noms de classes (str) et
+les valeurs sont les cartes de saillance correspondantes (torch.Tensor, forme (H,W)).
+- `titre_principal` (str, optionnel) : Titre général de la figure. Par défaut "Cartes de Saillance RISE".
+
+**Sorties :**
+- Aucune (affiche le graphique).
+
 ```python
-## def plot_rise_saliency_results(original_image_pil: Image.Image, class_saliency_maps: dict, main_title: str = "RISE Saliency Maps")
-# Plots the original image alongside RISE saliency maps for multiple classes.
-# Each saliency map is overlaid on a grayscale version of the original image.
-# From TP7 (Optional Part).
-
-# Entrées :
-# - original_image_pil (PIL.Image.Image): The original input image as a PIL Image object.
-# - class_saliency_maps (dict): A dictionary where keys are class names (str) and
-#                               values are the corresponding saliency maps (torch.Tensor, shape (H,W)).
-# - main_title (str, optional): Overall title for the figure. Defaults to "RISE Saliency Maps".
-
-# Sorties :
-# - None (displays the plot).
-import matplotlib.pyplot as plt
-from PIL import Image # For image operations
-import numpy as np # For converting PIL to numpy for grayscale
-
-def plot_rise_saliency_results(original_image_pil: Image.Image, class_saliency_maps: dict, main_title: str = "RISE Saliency Maps"):
+def visualiser_resultats_saliency_rise(image_originale_pil: Image.Image, cartes_saliency_par_classe: dict, titre_principal: str = "Cartes de Saillance RISE"):
     """
-    Plots original image and RISE saliency map overlays for multiple classes.
-    original_image_pil: PIL Image of the original input.
-    class_saliency_maps: Dict {'class_name': saliency_map_tensor_HW, ...}
+    Trace l'image originale et les superpositions de cartes de saillance RISE pour plusieurs classes.
+    image_originale_pil: Image PIL de l'entrée originale.
+    cartes_saliency_par_classe: Dict {'nom_classe': tenseur_carte_saliency_HW, ...}
     """
-    num_classes_to_plot = len(class_saliency_maps)
+    nb_classes_a_tracer = len(cartes_saliency_par_classe)
     
-    if num_classes_to_plot == 0:
-        print("No saliency maps provided to plot.")
+    if nb_classes_a_tracer == 0:
+        print("Aucune carte de saillance fournie pour le traçage.")
         return
 
-    fig, axes = plt.subplots(1, 1 + num_classes_to_plot, figsize=((1 + num_classes_to_plot) * 4, 4))
-    fig.suptitle(main_title, fontsize=16)
+    # Créer une figure avec 1 ligne et (1 + nb_classes_a_tracer) colonnes
+    # La première colonne pour l'image originale, les suivantes pour les cartes de saillance
+    fig, axes = plt.subplots(1, 1 + nb_classes_a_tracer, figsize=((1 + nb_classes_a_tracer) * 4.5, 4.5)) # Ajuster taille
+    fig.suptitle(titre_principal, fontsize=16)
 
-    # 1. Display original image
-    axes[0].imshow(original_image_pil)
-    axes[0].set_title("Original Image")
-    axes[0].axis('off')
+    # Si une seule classe est tracée, axes n'est pas un tableau, le rendre compatible
+    if nb_classes_a_tracer == 0: # Devrait être géré par le return ci-dessus, mais pour la robustesse
+        axes_iterable = [axes]
+    elif not isinstance(axes, np.ndarray): # Cas d'un seul subplot (1 image + 0 carte ou 1 image + 1 carte)
+        axes_iterable = np.array([axes]) # Le rendre itérable
+    else:
+        axes_iterable = axes.flatten()
 
-    # Convert original PIL image to grayscale numpy array for overlay background
-    original_image_gray_np = np.array(original_image_pil.convert('L'), dtype=np.float32) / 255.0 # Grayscale [0,1]
 
-    # 2. Display saliency map overlays for each class
-    plot_idx = 1
-    for class_name, saliency_map_tensor in class_saliency_maps.items():
-        saliency_map_np = saliency_map_tensor.cpu().numpy() # Ensure it's a NumPy array (H, W)
+    # 1. Afficher l'image originale
+    axes_iterable[0].imshow(image_originale_pil)
+    axes_iterable[0].set_title("Image Originale")
+    axes_iterable[0].axis('off')
+
+    # Convertir l'image PIL originale en tableau numpy niveaux de gris pour le fond de la superposition
+    img_originale_gris_np = np.array(image_originale_pil.convert('L'), dtype=np.float32) / 255.0 # Niveaux de gris [0,1]
+
+    # 2. Afficher les superpositions de cartes de saillance pour chaque classe
+    idx_graph = 1
+    for nom_classe, tenseur_carte_saliency in cartes_saliency_par_classe.items():
+        if idx_graph >= len(axes_iterable): break # Sécurité si moins d'axes que prévu
+
+        np_carte_saliency = tenseur_carte_saliency.cpu().numpy() # S'assurer que c'est un tableau NumPy (H, W)
         
-        ax = axes[plot_idx]
-        ax.imshow(original_image_gray_np, cmap='gray') # Background
-        im = ax.imshow(saliency_map_np, cmap='jet', alpha=0.6) # Overlay saliency map
-        ax.set_title(f"RISE for: {class_name}")
+        ax = axes_iterable[idx_graph]
+        ax.imshow(img_originale_gris_np, cmap='gray') # Fond
+        # Superposer la carte de saillance. 'jet' est une palette de couleurs courante pour les heatmaps.
+        im = ax.imshow(np_carte_saliency, cmap='jet', alpha=0.6) 
+        ax.set_title(f"RISE pour : {nom_classe}")
         ax.axis('off')
-        # Optional: Add a colorbar for the saliency map
-        # fig.colorbar(im, ax=ax, fraction=0.046, pad=0.04) 
-        plot_idx += 1
+        # Optionnel : Ajouter une barre de couleurs pour la carte de saillance
+        # fig.colorbar(im, ax=ax, fraction=0.046, pad=0.04) # Ajuster les paramètres au besoin
+        idx_graph += 1
         
-    plt.tight_layout(rect=[0, 0, 1, 0.95]) # Adjust for suptitle
+    plt.tight_layout(rect=[0, 0, 1, 0.95]) # Ajuster pour le suptitle
     plt.show()
 
 ```

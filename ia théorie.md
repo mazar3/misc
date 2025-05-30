@@ -297,7 +297,6 @@ Il existe quatre perspectives principales pour définir l'IA :
 - **But principal : Généralisation** : Capacité du modèle appris à bien performer sur des données **nouvelles et invisibles** (non vues pendant l'entraînement), et pas seulement sur les données d'entraînement.
 
 ## C3. Types d’Apprentissage : Supervisé, Non Supervisé, Semi-Supervisé, Auto-Supervisé, Renforcement et Formulation
-- **Diagramme général** : Illustre les trois branches principales (Supervisé, Non Supervisé, Renforcement).
 - **Apprentissage supervisé (Supervised Learning)** :
     - **Entrée** : **Données étiquetées** (Labeled Data), c'est-à-dire des paires (entrée, sortie désirée).
     - **Processus** : Le **modèle ML** (ML Model) apprend une fonction de mappage des entrées vers les sorties.
@@ -331,9 +330,6 @@ Il existe quatre perspectives principales pour définir l'IA :
     - **Online Interactions vs. Offline Reinforcement Learning** :
         - **Online (classique)** : L'agent apprend en interagissant directement et continuellement avec l'environnement.
         - **Offline (Batch RL)** : L'agent apprend à partir d'un ensemble fixe de données d'interactions collectées précédemment (pas d'interaction directe pendant l'apprentissage).
-- **Formulation mathématique (simplifiée)** :
-    - **Non supervisé** : Étant donné des entrées `xi`, trouver une structure ou une représentation `yi` (ex: `xi` -> `cluster_id_i`).
-    - **Supervisé** : Étant donné des paires `(xi, yi)`, apprendre une fonction `f` telle que `f(x*) ≈ y*` pour une nouvelle entrée `x*`.
 
 ## C4. Terminologie du Machine Learning : Exemples, Modèles, Phases, Régression vs. Classification
 - **Termes de base** :
@@ -381,11 +377,9 @@ Il existe quatre perspectives principales pour définir l'IA :
     - **Hyperparamètres** : Paramètres de l'algorithme d'apprentissage qui ne sont pas appris à partir des données mais fixés avant l'entraînement (ex: taux d'apprentissage, nombre de couches dans un réseau).
 - **Réduction de la perte : point de départ et convexité** :
     - **Problèmes convexes** : La fonction de perte a un seul minimum global. Le point de départ n'influence pas la solution finale trouvée (on atteindra toujours le même minimum).
-    - **Problèmes non convexes** (ex: réseaux de neurones profonds) : La fonction de perte a de multiples minima locaux. Le point de départ *peut* influencer le minimum local atteint.
+    - **Problèmes non convexes** (exemple : réseaux de neurones profonds) : La fonction de perte a de multiples minima locaux. Le point de départ *peut* influencer le minimum local atteint.
 - **Exemple pratique de descente de gradient (code Python)** : Implémentation montrant le calcul du gradient et la mise à jour des poids.
 - **Descente de gradient pour DNN (Deep Neural Networks)** : La même idée s'applique, mais le calcul du gradient (via la rétropropagation) et la mise à jour des poids concernent tous les poids et biais du réseau.
-    - **Formule de minimisation** : `min_W L(W)` où `L` est la perte et `W` l'ensemble des poids.
-    - **Mise à jour des poids** : `W_new = W_old - η * ∇L(W_old)`
 - **Petit exercice (TensorFlow Playground - Fitter)** : Expérimenter avec différents paramètres pour observer l'ajustement du modèle.
 - **Descente de gradient classique (Batch) vs Stochastique (SGD) vs par Mini-lot (Mini-Batch)** :
     - **Batch Gradient Descent (Classique)** :
@@ -395,14 +389,12 @@ Il existe quatre perspectives principales pour définir l'IA :
     - **Stochastic Gradient Descent (SGD)** :
         - Calcule le gradient et met à jour les poids pour **chaque exemple individuellement**.
         - Rapide, moins de mémoire, mais estimations du gradient "bruyantes" (trajectoire erratique). Peut aider à échapper aux minima locaux.
-        - **Formule** : Basée sur un seul exemple `(xi, yi)`.
     - **Mini-Batch Gradient Descent** :
         - Compromis : Calcule le gradient et met à jour les poids sur de **petits sous-ensembles (mini-lots)** des données d'entraînement.
         - Efficace, bonnes estimations du gradient, tire parti de la vectorisation matérielle. Le plus utilisé en pratique.
         - **Formule** : Somme sur les exemples du mini-lot.
     - **Époques (Epochs)** : Une époque correspond à un passage complet de l'algorithme d'apprentissage sur l'ensemble des données d'entraînement. (Ex: si 1000 exemples et mini-lot de 100, une époque = 10 itérations de mise à jour).
     - **Comparaison visuelle (Batch, Stochastic, Mini-Batch Gradient Descent)** : Graphiques montrant la trajectoire de convergence (Batch = lisse, SGD = bruité, Mini-Batch = entre les deux).
-- **Exercice 1 (TensorFlow Playground - Régression)** : Appliquer les concepts de descente de gradient et de taux d'apprentissage à un problème de régression.
 
 ## C6. Généralisation et Représentation des Données : Éviter le Surapprentissage et Structurer les Données
 - **Généralisation** : La capacité d'un modèle à faire des prédictions précises sur des données **nouvelles, non vues précédemment**, après avoir été entraîné sur un ensemble de données spécifique. C'est l'objectif principal du ML.

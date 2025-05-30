@@ -1,6 +1,6 @@
 # Chapitre 1 : Introduction à l’Intelligence Artificielle
 
-## 1. Introduction : Qu'est-ce que l'IA et où la trouve-t-on ?
+## A1. Introduction : Qu'est-ce que l'IA et où la trouve-t-on ?
 - **Questions de définition et d'applications** : L'IA cherche à créer des machines capables de simuler l'intelligence humaine pour effectuer des tâches variées. Ses applications sont vastes et en pleine expansion.
 - **Exemples d'applications concrètes** :
     - **Voiture autonome** : Prise de décision, perception de l'environnement.
@@ -8,14 +8,14 @@
     - **Robocup 2018** : Coordination d'agents autonomes (robots footballeurs).
     - **Robot Boston Dynamics** : Mobilité avancée, équilibre, interaction physique.
 
-## 2. Prérequis de l’IA : Composants Essentiels et Fondations (incluant Vision de Turing)
+## A2. Prérequis de l’IA : Composants Essentiels et Fondations (incluant Vision de Turing)
 - **Concepts fondamentaux** : Nécessité de bases en logique, probabilités, statistiques, théorie de l'information.
 - **Algorithmes** : Séquences d'instructions précises pour résoudre un problème ou effectuer une tâche. Au cœur de l'IA.
 - **Big Data** : Vastes ensembles de données nécessaires pour entraîner et améliorer les modèles d'IA, notamment en apprentissage machine.
 - **Cloud computing** : Fournit la puissance de calcul et le stockage nécessaires pour traiter le Big Data et exécuter des algorithmes d'IA complexes.
 - **Principales étapes du parcours de l’IA (vision d'Alan Turing)** : Référence aux idées pionnières de Turing sur la possibilité pour les machines de "penser" et les capacités qu'elles devraient démontrer.
 
-## 3. Définitions de l’IA : Quatre Approches et Leurs Caractéristiques
+## A3. Définitions de l’IA : Quatre Approches et Leurs Caractéristiques
 Il existe quatre perspectives principales pour définir l'IA :
 
 - **1. Systèmes qui pensent comme les humains (Approche Cognitive)**
@@ -44,7 +44,7 @@ Il existe quatre perspectives principales pour définir l'IA :
     - **Exemples et avantages** : Plus général que la pensée rationnelle (l'action optimale n'est pas toujours une déduction logique), plus testable et scientifiquement rigoureux que les approches basées sur le comportement/pensée humaine.
     - **Prise de décisions rationnelles** : Choisir l'action qui mène au meilleur résultat attendu.
 
-## 4. Histoire de l’IA : Des Origines aux Développements Récents
+## A4. Histoire de l’IA : Des Origines aux Développements Récents
 - **Gestation de l’IA (1943 - 1955)**
     - **McCulloch et Pitts (1943)** : Premier modèle mathématique de neurone artificiel.
     - **Minsky et Edmonds (1951)** : SNARC, premier ordinateur à réseau de neurones.
@@ -84,7 +84,7 @@ Il existe quatre perspectives principales pour définir l'IA :
     - **AI Act (Union Européenne, proposition 2021, accord 2023)** : Régulation de l'IA.
 - **Ligne de temps et évolution de l’IA** : Une figure visuelle récapitule ces grandes étapes et les tendances.
 
-## 5. Approches de l’IA : Méthodologies (Symbolique, Apprentissage) et Formes (Générative, Augmentée)
+## A5. Approches de l’IA : Méthodologies (Symbolique, Apprentissage) et Formes (Générative, Augmentée)
 - **Programmation symbolique vs. Machine Learning (connexionniste)**
     - **Détail : Programmation symbolique (IA classique / GOFAI - Good Old-Fashioned AI)**
         - **Principe** : Représentation explicite des connaissances sous forme de symboles et de règles logiques (ex: `si <condition> alors <action>`).
@@ -108,7 +108,7 @@ Il existe quatre perspectives principales pour définir l'IA :
         - **Audio/Video Gen** : Modèles spécialisés dans la génération de sons, musique, ou séquences vidéo.
         - **LVM/VLM (Large Vision Models / Visual Language Models)** : Modèles combinant la compréhension d'images et de texte (ex: DALL-E, CLIP).
 
-## 6. Applications de l’IA : Domaines d'Impact, Exemples Concrets et Paradoxe de Moravec
+## A6. Applications de l’IA : Domaines d'Impact, Exemples Concrets et Paradoxe de Moravec
 - **Généralités et impact** : L'IA transforme de nombreux secteurs (santé, finance, transport, divertissement, etc.) et a un impact croissant sur la société.
 - **Principales applications (domaines)** :
     - **Vision par ordinateur** :
@@ -130,17 +130,14 @@ Il existe quatre perspectives principales pour définir l'IA :
     - **Constat** : Les tâches qui sont faciles pour les humains (ex: perception sensorielle, motricité, reconnaissance de visages) sont souvent très difficiles à réaliser pour l'IA. Inversement, des tâches considérées comme complexes pour les humains (ex: calculs, résolution de jeux formels comme les échecs ou le Go) peuvent être relativement "faciles" pour l'IA (avec suffisamment de puissance de calcul et les bons algorithmes).
     - **Explication (partielle)** : Les capacités humaines "faciles" sont le fruit de millions d'années d'évolution, tandis que le raisonnement abstrait est plus récent et moins optimisé biologiquement.
 
-## 7. Conclusion (Récapitulatif du Chapitre 1)
-- Ce chapitre a introduit les concepts clés de l'IA, ses définitions, son histoire, ses approches méthodologiques et ses principales applications, posant les bases pour la suite du cours.
-
 # Chapitre 2 : Agents Intelligents et Systèmes Multi-Agents
 
-## Introduction : Agents Intelligents au Cœur de l'IA et Rôle des Agents Rationnels
+## B1. Agents Intelligents au Cœur de l'IA et Rôle des Agents Rationnels
 - **Définition intuitive d'un agent intelligent** : Entité logicielle ou physique capable de percevoir son environnement, de raisonner et d'agir de manière autonome pour atteindre des objectifs.
     - **Exemples** : Médecin virtuel (diagnostic), Netflix (recommandation), Siri (assistant vocal), robots (tâches physiques).
 - **Place centrale des agents rationnels** : L'objectif est de construire des agents qui agissent de la **meilleure façon possible** (rationnellement) pour atteindre leurs buts.
 
-## I. Agents et Environnements : Définitions Fondamentales (Agent, Capteurs, Effecteurs, Séquence, Fonction vs. Programme)
+## B2. Agents et Environnements : Définitions Fondamentales (Agent, Capteurs, Effecteurs, Séquence, Fonction vs. Programme)
 - **Définition d'un agent** : Tout ce qui peut être considéré comme **percevant** son environnement à travers des **capteurs** (sensors) et **agissant** sur cet environnement à travers des **effecteurs** (actuators).
 - **Agent humain vs. agent robotique/logiciel** :
     - **Humain** : Yeux, oreilles (capteurs) ; mains, jambes, voix (effecteurs).
@@ -158,7 +155,7 @@ Il existe quatre perspectives principales pour définir l'IA :
         - Ex: `si case_actuelle = Sale alors aspirer sinon si case_actuelle = A alors aller_à_droite sinon aller_à_gauche`
 - **Fonction d’agent vs Programme d’agent** : La fonction est la spécification du comportement désiré (le "quoi"), le programme est l'implémentation qui réalise ce comportement (le "comment"). Plusieurs programmes peuvent implémenter la même fonction.
 
-## II. Concept de Rationalité : Être Rationnel, Mesures et Facteurs Clés (PEAS pour la Rationalité, Omniscience, Apprentissage, Autonomie)
+## B3. Concept de Rationalité : Être Rationnel, Mesures et Facteurs Clés (PEAS pour la Rationalité, Omniscience, Apprentissage, Autonomie)
 - **Agent rationnel** : Pour chaque séquence de perceptions possible, un agent rationnel doit sélectionner une action qui est censée **maximiser sa mesure de performance**, compte tenu des informations fournies par la séquence de perceptions et de toute connaissance intégrée qu'il possède.
 - **Mesure de performance** : Critère qui évalue le succès du comportement de l'agent. Elle est définie par le concepteur et doit être objective.
     - **Exemple du robot aspirateur (choix de mesure)** :
@@ -179,7 +176,7 @@ Il existe quatre perspectives principales pour définir l'IA :
     - **Récolte d’informations et apprentissage** : Un agent rationnel devrait explorer son environnement pour apprendre (si l'environnement est inconnu) et améliorer ses performances futures. L'apprentissage est essentiel pour la rationalité dans des environnements complexes ou changeants.
     - **Autonomie** : Un agent est autonome si son comportement est déterminé par sa propre expérience (apprise) plutôt que uniquement par ses connaissances initiales (programmées par le concepteur). Un agent rationnel devrait être autonome.
 
-## III. Environnements : Caractérisation (PEAS) et Typologie (Observable, Agents, Déterminisme, Épisodicité, Dynamisme, Nature, Connaissance) et Structure/Types d'Agents
+## B4. Environnements : Caractérisation (PEAS) et Typologie (Observable, Agents, Déterminisme, Épisodicité, Dynamisme, Nature, Connaissance) et Structure/Types d'Agents
 - **Définition de l'environnement de travail (PEAS)** : Cadre pour concevoir un agent rationnel.
     - **P**erformance (Measure) : Comment le succès est mesuré.
     - **E**nvironnement : Où l'agent opère.
@@ -237,7 +234,7 @@ Il existe quatre perspectives principales pour définir l'IA :
         4.  **Agents à base d’utilité (Utility-based agents)** : Choisissent les actions qui maximisent une fonction d'utilité (mesure du "bonheur" ou de la désirabilité d'un état). Utiles quand il y a des buts conflictuels ou incertains. (Ex: choisir l'itinéraire le plus rapide mais aussi le plus sûr).
         5.  **Agents capables d’apprentissage (Learning agents)** : Peuvent améliorer leurs performances avec l'expérience. Composés d'un "élément de performance" (choix des actions), d'un "élément d'apprentissage", d'une "critique" (évaluation des actions) et d'un "générateur de problèmes" (suggestion d'actions exploratoires).
 
-## IV. Systèmes Multi-Agents (SMA) : Définition, Composants (AEIO), Types d'Agents, Interactions et Intelligence Collective
+## B5. Systèmes Multi-Agents (SMA) : Définition, Composants (AEIO), Types d'Agents, Interactions et Intelligence Collective
 - **Définition et utilité des SMA** : Un SMA est un système composé de plusieurs agents autonomes qui interagissent dans un environnement commun pour résoudre des problèmes qui sont difficiles ou impossibles à résoudre par un agent monolithique.
     - **Utilité** : Résolution de problèmes distribués, robustesse, parallélisme, modularité, systèmes ouverts.
 - **SMA = Agents + Environnement + Interactions + Organisations (AEIO)** (selon [Ferber])
@@ -269,7 +266,7 @@ Il existe quatre perspectives principales pour définir l'IA :
     - **Penseur isolé vs communauté de penseurs** : La résolution de problèmes complexes peut émerger des interactions d'agents simples plutôt que d'un seul agent "génial". "Le tout est plus que la somme des parties."
     - **Exemples naturels** : Colonies de fourmis (construction de nids, recherche de nourriture), bancs de poissons, volées d'oiseaux (comportements coordonnés sans leader central).
 
-## V. Applications & Plateformes de Développement des SMA
+## B6. Applications & Plateformes de Développement des SMA
 - **Application exemple : évacuation du public d’un stade (vidéo)** : Simulation de foules où chaque individu est un agent avec des comportements simples, dont les interactions mènent à des phénomènes d'évacuation complexes.
 - **Plateformes de développement des SMA (exemples)** : Frameworks et bibliothèques facilitant la création de SMA.
     - **JADE (Java Agent DEvelopment Framework)** : Populaire, basé sur Java, conforme FIPA.
@@ -279,12 +276,9 @@ Il existe quatre perspectives principales pour définir l'IA :
     - **PADE (Python Agent DEvelopment Framework)** : Framework pour agents en Python.
     - **SPADE (Smart Python Agent Development Environment)** : Autre framework Python populaire.
 
-## Conclusion (Récapitulatif du Chapitre 2)
-- Ce chapitre a défini les agents intelligents, le concept de rationalité, la caractérisation des environnements, les différents types d'architectures d'agents, et a introduit les systèmes multi-agents (SMA) avec leurs composants, types d'agents, interactions, et le concept d'intelligence collective.
-
 # Chapitre 3 : Apprentissage Automatique (Machine Learning)
 
-## Introduction : Fondations et Types d'Apprentissage Machine
+## C1. Fondations et Types d'Apprentissage Machine
 - **Prérequis de l’IA et Approches de l’IA (récapitulatif)** : Rappel que le ML est une approche clé de l'IA, complémentaire à la programmation symbolique, et qu'elle s'appuie sur les données et les algorithmes.
 - **Programmation symbolique (limites)** : Difficulté à gérer la complexité, l'incertitude, et l'adaptation à de nouvelles situations sans reprogrammation explicite.
 - **Machine Learning (concept général, types)** :
@@ -295,14 +289,14 @@ Il existe quatre perspectives principales pour définir l'IA :
         - **Apprentissage par Renforcement** : Apprend par essais et erreurs en interagissant avec un environnement pour maximiser une récompense.
         - **Deep Learning (Apprentissage Profond)** : Sous-domaine du ML utilisant des réseaux de neurones profonds, applicable aux trois types ci-dessus.
 
-## I. Définition du Machine Learning : Processus et Objectif de Généralisation
+## C2. Définition du Machine Learning : Processus et Objectif de Généralisation
 - **Machine Learning : méthodes et processus d'apprentissage** : Ensemble de méthodes permettant aux ordinateurs d'améliorer leurs performances sur une tâche donnée grâce à l'expérience (les données). Le processus implique la sélection d'un modèle, son entraînement sur des données, et son évaluation.
 - **Informatique traditionnelle vs. Apprentissage machine** :
     - **Traditionnelle** : `Données + Programme -> Résultats` (on code les règles).
     - **Machine Learning** : `Données + Résultats (exemples) -> Programme (modèle)` (la machine "découvre" les règles).
 - **But principal : Généralisation** : Capacité du modèle appris à bien performer sur des données **nouvelles et invisibles** (non vues pendant l'entraînement), et pas seulement sur les données d'entraînement.
 
-## II. Types d’Apprentissage : Supervisé, Non Supervisé, Semi-Supervisé, Auto-Supervisé, Renforcement et Formulation
+## C3. Types d’Apprentissage : Supervisé, Non Supervisé, Semi-Supervisé, Auto-Supervisé, Renforcement et Formulation
 - **Diagramme général** : Illustre les trois branches principales (Supervisé, Non Supervisé, Renforcement).
 - **Apprentissage supervisé (Supervised Learning)** :
     - **Entrée** : **Données étiquetées** (Labeled Data), c'est-à-dire des paires (entrée, sortie désirée).
@@ -341,7 +335,7 @@ Il existe quatre perspectives principales pour définir l'IA :
     - **Non supervisé** : Étant donné des entrées `xi`, trouver une structure ou une représentation `yi` (ex: `xi` -> `cluster_id_i`).
     - **Supervisé** : Étant donné des paires `(xi, yi)`, apprendre une fonction `f` telle que `f(x*) ≈ y*` pour une nouvelle entrée `x*`.
 
-## III. Terminologie du Machine Learning : Exemples, Modèles, Phases, Régression vs. Classification
+## C4. Terminologie du Machine Learning : Exemples, Modèles, Phases, Régression vs. Classification
 - **Termes de base** :
     - **Exemple (ou instance, observation, feature vector) `x`** : Une entrée unique pour le modèle (ex: les caractéristiques d'une maison).
     - **Exemple étiqueté `(x, y)`** : Un exemple `x` avec sa sortie ou cible correcte `y` (utilisé en apprentissage supervisé).
@@ -356,7 +350,7 @@ Il existe quatre perspectives principales pour définir l'IA :
     - **Modèle de régression** : Prédit des **valeurs continues** (numériques) (ex: prédire le prix d'une maison, la température).
     - **Modèle de classification** : Prédit des **valeurs discrètes** (catégories ou classes) (ex: prédire si un email est un spam ou non, si une image contient un chat ou un chien).
 
-## IV. Réduction de la Perte et Descente du Gradient : Optimisation des Modèles
+## C5. Réduction de la Perte et Descente du Gradient : Optimisation des Modèles
 - **Exemple de régression (graphique prix maison vs surface)** :
     - Modèle linéaire simple : `Y = WX + b` (ou `y = mx + c`)
         - `Y` : Étiquette (prix prédit).
@@ -410,7 +404,7 @@ Il existe quatre perspectives principales pour définir l'IA :
     - **Comparaison visuelle (Batch, Stochastic, Mini-Batch Gradient Descent)** : Graphiques montrant la trajectoire de convergence (Batch = lisse, SGD = bruité, Mini-Batch = entre les deux).
 - **Exercice 1 (TensorFlow Playground - Régression)** : Appliquer les concepts de descente de gradient et de taux d'apprentissage à un problème de régression.
 
-## V. Généralisation et Représentation des Données : Éviter le Surapprentissage et Structurer les Données
+## C6. Généralisation et Représentation des Données : Éviter le Surapprentissage et Structurer les Données
 - **Généralisation** : La capacité d'un modèle à faire des prédictions précises sur des données **nouvelles, non vues précédemment**, après avoir été entraîné sur un ensemble de données spécifique. C'est l'objectif principal du ML.
     - **Surapprentissage (Overfitting)** : Le modèle apprend "trop bien" les données d'entraînement, y compris le bruit et les spécificités. Il performe très bien sur les données d'entraînement mais mal sur les nouvelles données (mauvaise généralisation).
         - *Symptômes* : Perte d'entraînement faible, perte de validation/test élevée.
@@ -432,12 +426,9 @@ Il existe quatre perspectives principales pour définir l'IA :
     2.  **Validation** : Modèle évalué sur le `validation set` pour régler les hyperparamètres (ex: taux d'apprentissage, complexité du modèle) et choisir le meilleur modèle.
     3.  **Test** : Le modèle final sélectionné est évalué une dernière fois sur le `test set` (qui n'a jamais été utilisé auparavant) pour estimer sa performance de généralisation.
 
-## Conclusion (Récapitulatif du Chapitre 3)
-- Ce chapitre a défini le Machine Learning, exploré ses principaux types (supervisé, non supervisé, renforcement, auto-supervisé), introduit la terminologie clé, expliqué le processus de réduction de la perte via la descente du gradient, et souligné l'importance de la généralisation et de la bonne utilisation des ensembles de données pour éviter le surapprentissage.
-
 # Chapitre 4 : L’Apprentissage Profond (Deep Learning)
 
-## Introduction : Émergence, Définition et Fonctionnement de Base
+## D1. Émergence, Définition et Fonctionnement de Base
 - **Artificial Intelligence / Machine Learning / Deep Learning (chronologie et emboîtement)** :
     - AI (concept général) -> ML (sous-domaine de l'AI, apprend à partir des données) -> DL (sous-domaine du ML, utilise des réseaux de neurones avec de nombreuses couches, dits "profonds").
 - **Facteurs d'émergence du Deep Learning** :
@@ -453,7 +444,7 @@ Il existe quatre perspectives principales pour définir l'IA :
     3.  **Backward Pass (Rétropropagation)** : L'erreur est propagée à rebours à travers le réseau pour calculer le gradient de la perte par rapport à chaque poids.
     4.  **Mise à jour des poids** : Les poids sont ajustés en utilisant le gradient (ex: descente de gradient) pour réduire l'erreur. Ce cycle est répété.
 
-## I. Le Perceptron : Unité de Base et Algorithme d'Apprentissage
+## D2. Le Perceptron : Unité de Base et Algorithme d'Apprentissage
 - **Définition du Perceptron (neurone formel)** :
     - **Pré-activation (`Z`)** : Somme pondérée des entrées plus un biais. `Z = Σ(wi * xi) + b`.
     - **Activation (`A(z)`)** : Application d'une fonction d'activation (souvent non-linéaire) à la pré-activation. Ex: `A(z) = sigmoid(z)`.
@@ -493,7 +484,7 @@ Il existe quatre perspectives principales pour définir l'IA :
 - **Processus de Backpropagation (animation)** : Illustration visuelle de la propagation de l'erreur et du calcul des gradients de la couche de sortie vers les couches d'entrée.
 - **Entraînement d'un réseau de neurones : résumé (animation)** : Vue d'ensemble animée du cycle complet forward-loss-backward-update.
 
-## II. Types de Réseaux de Neurones Profonds (ANN, MLP, CNN, RNN, etc.)
+## D3. Types de Réseaux de Neurones Profonds (ANN, MLP, CNN, RNN, etc.)
 - **Vue d'ensemble illustrée (architectures classiques)** :
     - **ANN (Artificial Neural Network)** : Terme générique.
     - **MLP (Multilayer Perceptron)** : Réseau de neurones "feedforward" (connexions uniquement vers l'avant) avec une ou plusieurs couches cachées. Chaque neurone d'une couche est connecté à tous les neurones de la couche suivante (couches denses ou "fully connected").
@@ -525,7 +516,7 @@ Il existe quatre perspectives principales pour définir l'IA :
     - **Exemple de calcul d’erreur (Cost, "What's the cost of this difference?")** : Si la cible est '3' (ex: `[0,0,0,1,0,0,0,0,0,0]`) et la prédiction Softmax donne une faible probabilité pour la classe '3', la fonction de coût (ex: Cross-Entropy) sera élevée.
     - **Cost function (général)** : Prend en entrée les prédictions du modèle (`Input`), les vraies étiquettes (`Output`), et dépend des `Parameters` du modèle. Son objectif est de quantifier l'erreur du modèle.
 
-## III. Paramètres d’Entraînement, Syntaxe (PyTorch Lightning) et Évaluation de Modèles (MNIST en pratique)
+## D4. Paramètres d’Entraînement, Syntaxe (PyTorch Lightning) et Évaluation de Modèles (MNIST en pratique)
 - **Descente de gradient et mise à jour des poids (récapitulatif formules)** :
     - `Loss = L(y_true, y_pred)`
     - `Gradients = ∇_W L`
@@ -572,7 +563,7 @@ Il existe quatre perspectives principales pour définir l'IA :
         - **Matrice de confusion** : Tableau qui résume les performances d'un modèle de classification (vrais positifs, vrais négatifs, faux positifs, faux négatifs pour chaque classe).
 - **Processus d’entraînement/validation/test (diagramme récapitulatif)** : Rappel visuel des trois étapes et de leurs rôles.
 
-## IV. Réseaux de Neurones Convolutionnels (CNNs / ConvNets) : Traitement d'Images
+## D5. Réseaux de Neurones Convolutionnels (CNNs / ConvNets) : Traitement d'Images
 - **Motivation : aller plus loin avec les images** : Les MLP ne sont pas idéaux pour les images car ils aplatissent l'entrée (perte de structure spatiale 2D/3D) et ont beaucoup de paramètres (chaque pixel connecté à chaque neurone de la première couche cachée). Les CNNs exploitent la structure locale des images.
 - **Petit rappel : une image et une région de l'image (pixels)** : Une image est une grille de pixels. Les CNNs analysent des petites régions (patchs) de l'image.
 - **Extraction de caractéristiques et filtrage d’image : convolutions** :
@@ -611,11 +602,11 @@ Il existe quatre perspectives principales pour définir l'IA :
 
 # Chapitre 5 : Apprentissage Profond pour la Vision par Ordinateur
 
-## Introduction : Rappel CNN et Tâche de Classification
+## E1. Rappel CNN et Tâche de Classification
 - **Récapitulatif CNN (diagramme LeNet)** : Rappel de l'architecture typique d'un CNN (Convolution, Pooling, couches denses) comme base pour les tâches de vision.
 - **Exemple de classification (Chat/Chien)** : Tâche fondamentale en vision : attribuer une étiquette (ex: "chat" ou "chien") à une image entière.
 
-## I. Architectures (Deep) de Classification d’Images : D'AlexNet aux Transformers
+## E2. Architectures (Deep) de Classification d’Images : D'AlexNet aux Transformers
 - **Le Challenge ImageNet (ILSVRC - ImageNet Large Scale Visual Recognition Challenge)** : Compétition annuelle (maintenant terminée pour la classification) qui a grandement stimulé la recherche en architectures de CNN. Consiste à classifier des images parmi 1000 catégories.
 - **Liste des architectures notables (chronologique et par performance)** :
     - **LeNet (1998)** : Pionnier, pour la reconnaissance de chiffres manuscrits.
@@ -643,7 +634,7 @@ Il existe quatre perspectives principales pour définir l'IA :
     - `from tensorflow.keras.applications import VGG16`
     - `model = VGG16(weights='imagenet', include_top=True)` (`include_top=True` pour la classification ImageNet, `False` pour le transfert).
 
-## II. Transfert Learning et Fine Tuning : Réutiliser la Connaissance
+## E3. Transfert Learning et Fine Tuning : Réutiliser la Connaissance
 - **Entraînement d’un CNN (coûteux)** : Entraîner un CNN profond from scratch (à partir de zéro) sur un grand dataset comme ImageNet demande beaucoup de données, de temps et de ressources de calcul (GPU).
 - **Transfer Learning (Apprentissage par transfert) : définition et avantages** :
     - **Définition** : Technique où un modèle pré-entraîné sur une tâche source volumineuse (ex: ImageNet) est réutilisé comme point de départ pour une tâche cible, souvent avec moins de données.
@@ -678,7 +669,7 @@ Il existe quatre perspectives principales pour définir l'IA :
     - **ModelCheckpoint** : Sauvegarde le meilleur modèle (ou les poids) pendant l'entraînement en fonction d'une métrique surveillée (ex: `val_loss`).
     - **EarlyStopping** : Arrête l'entraînement si une métrique surveillée (ex: `val_loss`) ne s'améliore plus pendant un certain nombre d'époques (`patience`), pour éviter l'overfitting et gagner du temps.
 
-## III. Architectures (Deep) de Localisation et Détection d’Objets
+## E4. Architectures (Deep) de Localisation et Détection d’Objets
 - **Comparaison des performances (mAP vs. time)** : Graphique montrant le compromis entre la précision (mAP - mean Average Precision) et la vitesse (FPS - Frames Per Second) pour différents détecteurs d'objets.
 - **Tâches de vision (complexité croissante)** :
     1.  **Classification** : Quelle classe d'objet est présente dans l'image ? (1 étiquette par image)
@@ -744,18 +735,15 @@ Il existe quatre perspectives principales pour définir l'IA :
     - **2. SSD (Single Shot MultiBox Detector) (Liu et al., 2016)** :
         - Similaire à YOLO, mais utilise des cartes de caractéristiques de différentes échelles (multiples couches de convolution) pour prédire des boîtes. Permet de mieux détecter des objets de différentes tailles.
 
-## Conclusion (Récapitulatif du Chapitre 5 Vision)
-- Ce chapitre a couvert les architectures majeures de CNN pour la classification d'images (d'AlexNet aux Vision Transformers), l'importance du transfert learning et du fine-tuning. Il a ensuite exploré les tâches de localisation et de détection d'objets, détaillant l'évolution des méthodes (de R-CNN à Faster R-CNN) et les approches single-shot comme YOLO et SSD, en soulignant les métriques et datasets clés.
-
 # Chapitre 6 : Nouvelles Architectures Neuronales Profondes & Multimodales (Transformers, ViT, LLM & VLM)
 
-## Introduction : Évolution Récente de l'IA et des Architectures
+## F1. Évolution Récente de l'IA et des Architectures
 - **Ligne de temps et évolution de l’IA (répétition)** : Rappel de la progression rapide des modèles, notamment avec l'avènement des Transformers et des modèles à grande échelle.
 
-## I. Rappel : Réseaux de Neurones Convolutionnels (CNN)
+## F2. Rappel : Réseaux de Neurones Convolutionnels (CNN)
 - **CNN Explainer (outil interactif)** : Référence à un outil permettant de visualiser et comprendre interactivement le fonctionnement interne des CNNs (couches de convolution, pooling, etc.). *Utile pour se remémorer les concepts de base des CNN avant de comparer avec les Transformers.*
 
-## II. Réseaux de Neurones Récurrents (RNN) : Traitement de Séquences et Limites
+## F3. Réseaux de Neurones Récurrents (RNN) : Traitement de Séquences et Limites
 - **Exemple : réseau de neurones pour la prédiction du mot suivant (Next Word Prediction)** : Tâche classique pour les RNN où le contexte des mots précédents est utilisé pour prédire le mot suivant dans une phrase.
 - **Vanilla Recurrent Neural Network (RNN simple)** :
     - **Structure déroulée** : Un RNN peut être vu comme une série de mêmes blocs neuronaux, chacun traitant un élément de la séquence et passant une information d'état (hidden state) au bloc suivant. La sortie à un instant `t` dépend de l'entrée à `t` et de l'état caché à `t-1`.
@@ -772,7 +760,7 @@ Il existe quatre perspectives principales pour définir l'IA :
     - **Difficulté de parallélisation** : Le calcul est intrinsèquement séquentiel (l'état `t` dépend de `t-1`), ce qui limite l'exploitation des GPU.
     - **Rôle des Transformers** : Les Transformers ont été proposés en partie pour surmonter ces limitations, notamment grâce à la parallélisation et au mécanisme d'attention pour capturer les dépendances à longue portée.
 
-## III. Transformers : Révolutionner le Traitement Séquentiel avec l'Attention
+## F4. Transformers : Révolutionner le Traitement Séquentiel avec l'Attention
 - **Définition (Google Brain, "Attention Is All You Need", 2017)** :
     - Architecture de réseau de neurones initialement proposée pour la traduction automatique.
     - Repose principalement sur le **mécanisme d'auto-attention (self-attention mechanism)** pour pondérer l'importance des différents éléments d'une séquence d'entrée par rapport aux autres éléments de la même séquence.
@@ -789,7 +777,7 @@ Il existe quatre perspectives principales pour définir l'IA :
         - **Décodeur** : Génère la séquence de sortie, en utilisant également l'attention sur la sortie de l'encodeur (cross-attention) et l'auto-attention sur les tokens déjà générés.
 - **Transformers : explained (outil interactif)** : Référence à des visualisations (ex: The Illustrated Transformer) qui expliquent en détail les composants (Query, Key, Value, Scaled Dot-Product Attention, etc.).
 
-## IV. Vision Transformers (ViT) : Appliquer l'Attention à la Vision
+## F5. Vision Transformers (ViT) : Appliquer l'Attention à la Vision
 - **Définition (Google, 2020/2021)** : Architecture qui adapte le modèle Transformer pour les tâches de **vision par ordinateur**, se positionnant comme une **alternative aux CNNs**.
 - **Comparaison CNN vs ViT** :
     - **CNN** :
@@ -831,7 +819,7 @@ Il existe quatre perspectives principales pour définir l'IA :
     5.  **Token classification (pour la classification d'image)** :
         - La représentation finale du token **[CLS]** (introduit au début de la séquence) en sortie du dernier bloc Transformer est passée à une tête de classification (souvent un MLP simple avec une couche Softmax) pour prédire la classe de l'image.
 
-## V. LLM et VLM : Modèles Géants de Langage et Modèles Vision-Langage
+## F6. LLM et VLM : Modèles Géants de Langage et Modèles Vision-Langage
 - **LLMs (Large Language Models - Grands Modèles de Langage)** :
     - **Cœur** : Reposent fondamentalement sur l'architecture **Transformer**, en particulier le **mécanisme d'attention**.
     - **Modèles emblématiques** :
@@ -860,19 +848,9 @@ Il existe quatre perspectives principales pour définir l'IA :
         - **Génération multimodale** : Ex: générer une histoire avec des images illustratives.
     - **Architectures typiques** : Souvent combinent un encodeur d'image (CNN ou ViT) et un encodeur/décodeur de texte (Transformer), avec des mécanismes pour fusionner ou aligner les représentations des deux modalités (ex: cross-attention).
 
-## Conclusion : Synthèse des Architectures Neuronales Modernes et Multimodalité
-- Ce chapitre a passé en revue l'évolution des architectures neuronales :
-    - **CNN** : Excellents pour la vision grâce à leur biais inductif de localité.
-    - **RNN (et LSTM)** : Conçus pour les séquences, mais avec des limitations de parallélisation et de dépendances à long terme.
-    - **Transformer** : A révolutionné le traitement séquentiel (NLP) grâce à l'attention et la parallélisation, devenant la base des LLM.
-    - **Vision Transformer (ViT)** : A étendu l'architecture Transformer au domaine de la vision, offrant une alternative puissante aux CNN, surtout avec de grands datasets.
-    - **LLM** : Modèles Transformer à très grande échelle, pré-entraînés sur d'immenses corpus textuels, capables de comprendre et générer du langage avec une fluidité impressionnante.
-    - **VLM** : Combinent la compréhension de la vision et du langage, ouvrant la voie à des applications **multimodales** plus riches et interactives.
-- La tendance est à des modèles de plus en plus grands, capables de gérer de multiples modalités et d'apprendre à partir de données moins supervisées.
-
 # Chapitre 7 : Pistes de Développement et Challenges en Apprentissage Profond
 
-## Introduction : Diversité des Applications du Deep Learning
+## G1. Diversité des Applications du Deep Learning
 - **Exemples d'applications DL (diversifiées)** :
     - **Classification d'images** (ex: reconnaître des objets).
     - **Image Retrieval (Recherche d'images par le contenu)**.
@@ -881,7 +859,7 @@ Il existe quatre perspectives principales pour définir l'IA :
     - **Social Distancing Monitoring** (détection de la distance entre personnes).
     - *Illustre la polyvalence et l'impact du DL.*
 
-## I. Deep Learning : Création de Modèles & Analyse de Performance (Biais-Variance)
+## G2. Deep Learning : Création de Modèles & Analyse de Performance (Biais-Variance)
 - **Courbes de performance (Loss/Accuracy pour training/validation)** : Outils essentiels pour diagnostiquer le comportement du modèle pendant l'entraînement.
     - `train_loss` vs `val_loss` ; `train_accuracy` vs `val_accuracy`.
     - Des écarts importants entre les courbes d'entraînement et de validation indiquent souvent un surapprentissage.
@@ -915,7 +893,7 @@ Il existe quatre perspectives principales pour définir l'IA :
         - Utiliser une architecture plus petite.
         - Feature selection (si applicable).
 
-## II. Fonctions d'Activation : Analyse Comparative et Impact
+## G3. Fonctions d'Activation : Analyse Comparative et Impact
 - **Rappel du Perceptron (pré-activation `z`, activation `a = g(z)`)** : La fonction d'activation introduit la non-linéarité.
 - **Types de fonctions d'activation (récapitulatif)** :
     - **Linear (Identité)** : `g(z) = z`.
@@ -938,7 +916,7 @@ Il existe quatre perspectives principales pour définir l'IA :
         - Dérivée nulle pour `z < 0` (peut causer des "dead neurons" pour ReLU).
 - **Démo interactive (TensorFlow Playground)** : Permet d'expérimenter avec différentes fonctions d'activation et d'observer leur impact sur la capacité du réseau à apprendre différentes frontières de décision.
 
-## III. Explainable Deep Learning (XAI - IA Explicable)
+## G4. Explainable Deep Learning (XAI - IA Explicable)
 - **Facteurs de succès du Deep Learning (récapitulatif)** : Big Data, HPC/GPU, modèles/algorithmes avancés.
 - **Problèmes / Défis majeurs du Deep Learning** :
     - **Explicabilité et Interprétabilité (Boîte Noire - Black Box)** : Les modèles DL sont souvent très complexes, rendant difficile de comprendre *pourquoi* ils prennent une décision spécifique. C'est un frein pour les applications critiques (médical, finance, justice).
@@ -985,9 +963,3 @@ Il existe quatre perspectives principales pour définir l'IA :
 - **CNN Layers visualisation (outils interactifs)** :
     - **CNN Explainer** (référence déjà vue).
     - **Ryerson ConvnetJS demo / TensorFlow Playground** : Outils qui permettent de visualiser les activations des différentes couches d'un CNN, aidant à comprendre ce que chaque couche apprend (des bords simples aux motifs plus complexes).
-
-## Conclusion (Récapitulatif du Chapitre 7)
-- Ce chapitre a souligné l'importance de l'analyse de performance (biais/variance) et du choix judicieux des fonctions d'activation.
-- Il a introduit le domaine crucial de l'**Explainable Deep Learning (XAI)**, motivé par le besoin de transparence et de confiance dans les modèles "boîtes noires".
-- Des exemples concrets (détection COVID-19) ont montré comment XAI peut non seulement expliquer les décisions, mais aussi aider à **détecter et corriger les biais dans les données**, ce qui est essentiel pour développer des systèmes d'IA robustes et équitables.
-- Les outils de visualisation jouent un rôle clé dans la compréhension des modèles.

@@ -345,19 +345,9 @@ Il existe quatre perspectives principales pour définir l'IA :
     - **Modèle de classification** : Prédit des **valeurs discrètes** (catégories ou classes) (ex: prédire si un email est un spam ou non, si une image contient un chat ou un chien).
 
 ## C5. Réduction de la Perte et Descente du Gradient : Optimisation des Modèles
-- **Exemple de régression (graphique prix maison vs surface)** :
-    - Modèle linéaire simple : `Y = WX + b` (ou `y = mx + c`)
-        - `Y` : Étiquette (prix prédit).
-        - `X` : Caractéristique (surface).
-        - `W` (ou `w1`, `m`) : Poids (weight) ou pente de la caractéristique.
-        - `b` (ou `w0`, `c`) : Biais (bias) ou ordonnée à l'origine.
 - **Perte (Loss)** : Mesure à quel point la prédiction du modèle est "mauvaise" par rapport à la valeur réelle. Une valeur unique.
 - **Perte nulle** : Signifie que les prédictions du modèle sont parfaites pour les exemples considérés.
 - **Erreur (Error)** : Différence entre la valeur réelle (Actual) et la valeur prédite (Predicted) pour un seul exemple. La perte est souvent une agrégation des erreurs.
-- **Perte L2 (L2 Loss) ou Perte Quadratique (Squared Loss)** :
-    - **Formule** : `L2 Loss = Σ (y - y_pred)²` (somme des carrés des erreurs).
-    - **MSE (Mean Squared Error - Erreur Quadratique Moyenne)** : `MSE = (1/N) * Σ (y - y_pred)²` (moyenne des carrés des erreurs). C'est une fonction de perte courante pour la régression.
-- **Question sur MSE de deux ensembles** : Comparer la MSE sur deux ensembles de prédictions pour voir quel modèle/ensemble de prédictions est meilleur (MSE plus faible = meilleur).
 - **Réduction de la perte : approche itérative (diagramme)** :
     - L'entraînement d'un modèle consiste à trouver les valeurs des paramètres (ex: `W`, `b`) qui minimisent la fonction de perte.
     - C'est un processus itératif : on ajuste les paramètres petit à petit pour réduire la perte.

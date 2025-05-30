@@ -243,7 +243,6 @@ Il existe quatre perspectives principales pour définir l'IA :
     - **Interactions** : Mécanismes par lesquels les agents s'influencent (directes ou indirectes).
     - **Organisations** : Structures et règles qui gouvernent les relations et interactions entre agents (rôles, hiérarchies).
 - **Agents (définition de Jacques Ferber pour les SMA)** : Une entité physique ou abstraite capable d'agir sur elle-même et son environnement, qui dispose d'une représentation partielle de cet environnement et qui peut communiquer avec d'autres agents.
-    - **Diagramme conceptuel d'un agent (dans un SMA)** : Montre généralement les modules de perception, décision (raisonnement, objectifs), action, communication, et base de connaissances.
     - **Propriétés d’un agent (dans un SMA)** :
         - **Autonome** : Agit sans intervention humaine directe, contrôle sur ses actions et son état interne.
         - **Proactif (ou orienté but)** : Prend des initiatives pour atteindre ses objectifs.
@@ -258,7 +257,6 @@ Il existe quatre perspectives principales pour définir l'IA :
         - **Fort (Tight coupling)** : L'agent est fortement influencé par l'environnement, souvent réactif.
         - **Faible (Loose coupling)** : L'agent a plus d'autonomie par rapport à l'environnement, souvent cognitif.
         - **Réactif/Cognitif-BDI** : Ces architectures influencent le type de couplage.
-- **Structure des Systèmes Multi-agents (diagramme)** : Illustre typiquement plusieurs agents, leurs modules internes, l'environnement partagé, et les canaux de communication/interaction.
 - **Interactions entre agents** :
     - **Communication indirecte (stigmergie)** : Les agents interagissent en modifiant l'environnement (ex: phéromones des fourmis).
     - **Communication directe** : Les agents échangent des messages via un langage de communication (ex: KQML, FIPA-ACL). Peut être : coordination, coopération, négociation.
@@ -378,9 +376,7 @@ Il existe quatre perspectives principales pour définir l'IA :
 - **Réduction de la perte : point de départ et convexité** :
     - **Problèmes convexes** : La fonction de perte a un seul minimum global. Le point de départ n'influence pas la solution finale trouvée (on atteindra toujours le même minimum).
     - **Problèmes non convexes** (exemple : réseaux de neurones profonds) : La fonction de perte a de multiples minima locaux. Le point de départ *peut* influencer le minimum local atteint.
-- **Exemple pratique de descente de gradient (code Python)** : Implémentation montrant le calcul du gradient et la mise à jour des poids.
 - **Descente de gradient pour DNN (Deep Neural Networks)** : La même idée s'applique, mais le calcul du gradient (via la rétropropagation) et la mise à jour des poids concernent tous les poids et biais du réseau.
-- **Petit exercice (TensorFlow Playground - Fitter)** : Expérimenter avec différents paramètres pour observer l'ajustement du modèle.
 - **Descente de gradient classique (Batch) vs Stochastique (SGD) vs par Mini-lot (Mini-Batch)** :
     - **Batch Gradient Descent (Classique)** :
         - Calcule le gradient sur l'**ensemble des données d'entraînement** avant chaque mise à jour des poids.
@@ -412,7 +408,6 @@ Il existe quatre perspectives principales pour définir l'IA :
         - **Volume suffisant** : Nécessaire pour un bon apprentissage et une évaluation fiable.
         - **Divergence (non-chevauchement)** : Les ensembles d'entraînement, de validation et de test doivent être distincts et idéalement provenir de la même distribution de données que celle que le modèle rencontrera en production.
         - **Pas de doublons (ou fuite de données)** : S'assurer qu'aucun exemple de l'ensemble de test/validation n'est présent dans l'ensemble d'entraînement.
-- **Exercice 2 (TensorFlow Playground - Classification, show test data)** : Observer la différence de performance entre les données d'entraînement et de test, et identifier le surapprentissage.
 - **Processus : entraînement / validation / test (diagramme)** :
     1.  **Entraînement** : Modèle apprend sur le `training set`.
     2.  **Validation** : Modèle évalué sur le `validation set` pour régler les hyperparamètres (ex: taux d'apprentissage, complexité du modèle) et choisir le meilleur modèle.
@@ -553,7 +548,6 @@ Il existe quatre perspectives principales pour définir l'IA :
         - `train_test_split` (scikit-learn) : Fonction pour diviser les données.
         - `trainer.test(datamodule=...)` : Évalue le modèle final sur l'ensemble de test.
         - **Matrice de confusion** : Tableau qui résume les performances d'un modèle de classification (vrais positifs, vrais négatifs, faux positifs, faux négatifs pour chaque classe).
-- **Processus d’entraînement/validation/test (diagramme récapitulatif)** : Rappel visuel des trois étapes et de leurs rôles.
 
 ## D5. Réseaux de Neurones Convolutionnels (CNNs / ConvNets) : Traitement d'Images
 - **Motivation : aller plus loin avec les images** : Les MLP ne sont pas idéaux pour les images car ils aplatissent l'entrée (perte de structure spatiale 2D/3D) et ont beaucoup de paramètres (chaque pixel connecté à chaque neurone de la première couche cachée). Les CNNs exploitent la structure locale des images.
@@ -595,7 +589,6 @@ Il existe quatre perspectives principales pour définir l'IA :
 # Chapitre 5 : Apprentissage Profond pour la Vision par Ordinateur
 
 ## E1. Rappel CNN et Tâche de Classification
-- **Récapitulatif CNN (diagramme LeNet)** : Rappel de l'architecture typique d'un CNN (Convolution, Pooling, couches denses) comme base pour les tâches de vision.
 - **Exemple de classification (Chat/Chien)** : Tâche fondamentale en vision : attribuer une étiquette (ex: "chat" ou "chien") à une image entière.
 
 ## E2. Architectures (Deep) de Classification d’Images : D'AlexNet aux Transformers
